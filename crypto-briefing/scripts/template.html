@@ -163,7 +163,12 @@ ul.pts li::marker{color:var(--muted)}
 .arg .hd.up{color:var(--up)} .arg .hd.down{color:var(--down)}
 .arg .counter{border-top:1px dashed var(--line);padding-top:6px;font-size:14px;color:var(--ink-2)}
 .arg .counter b{color:var(--muted);font-size:12.5px;margin-right:4px}
-.is-filtered{display:none}
+.is-filtered, .sig-list li.is-filtered{display:none}
+body[data-focus] .cc{opacity:.22;transition:opacity .15s}
+body[data-focus="BTC"] .c-BTC, body[data-focus="ETH"] .c-ETH, body[data-focus="XRP"] .c-XRP, body[data-focus="DOGE"] .c-DOGE{opacity:1}
+td.c-on, th.c-on{background:transparent}
+.filter-note{font-size:12.5px;font-weight:600;color:var(--strong);width:100%}
+.filter-note[data-empty="1"]{display:none}
 
 /* 뉴스 목록 */
 .news{display:grid;gap:0;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
@@ -224,6 +229,9 @@ footer .wrap{padding-block:20px 32px;display:grid;gap:6px}
   .wrap{max-width:none;padding-left:0;padding-right:0}
   main .wrap{gap:22px;padding-block:14px 0}
   .is-filtered{display:block!important}
+  .sig-list li.is-filtered{display:block!important}
+  .cc{opacity:1!important}
+  .filter-note{display:none!important}
   .fold.collapsed > .fold-body{display:grid!important}
   .fold-btn::after{display:none}
   .cards{grid-template-columns:repeat(2,1fr)}
@@ -252,18 +260,35 @@ footer .wrap{padding-block:20px 32px;display:grid;gap:6px}
 <script>
 (function(){
   var coinBtns = document.querySelectorAll('[data-filter]');
+  var fnote = document.getElementById('filter-note');
+  // ⑤ 신호 판단 목록의 각 줄에 코인 표시를 붙임 (굵은 글씨의 코인명 기준)
+  document.querySelectorAll('.sig-list li').forEach(function(li){
+    var b = li.querySelector('b'); if (b) li.setAttribute('data-coin', b.textContent.trim());
+  });
   var panels = document.querySelectorAll('[data-coin]');
-  function setFilter(c){
+  function setFilter(c, fromClick){
     coinBtns.forEach(function(b){ b.setAttribute('aria-pressed', b.getAttribute('data-filter')===c ? 'true':'false'); });
     panels.forEach(function(p){
       var list = p.getAttribute('data-coin').split(' ');
       p.classList.toggle('is-filtered', c!=='ALL' && list.indexOf(c)===-1 && list.indexOf('ALL')===-1);
     });
-    try{ localStorage.setItem('ub-brief-filter', c); }catch(e){}
+    if (c === 'ALL') document.body.removeAttribute('data-focus'); else document.body.setAttribute('data-focus', c);
+    if (fnote){
+      fnote.textContent = c === 'ALL' ? '' : c + ' 선택 중 · ② 가격 카드, ③ 코인별 상세, ⑤ 신호 판단은 ' + c + '만 표시하고 차트·표는 ' + c + '를 강조함 (① 요약·④ 공통 요인은 전체 공통 내용이라 그대로임)';
+      fnote.setAttribute('data-empty', c === 'ALL' ? '1' : '0');
+    }
+    if (fromClick && c !== 'ALL'){
+      var target = document.getElementById('sec-price');
+      if (target && target.getBoundingClientRect().top > 160){
+        var bar = document.querySelector('.toolbar');
+        var y = target.getBoundingClientRect().top + window.pageYOffset - (bar ? bar.offsetHeight + 12 : 70);
+        var smooth = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        window.scrollTo({ top: y, behavior: smooth ? 'smooth' : 'auto' });
+      }
+    }
   }
-  coinBtns.forEach(function(b){ b.addEventListener('click', function(){ setFilter(b.getAttribute('data-filter')); }); });
-  var saved='ALL'; try{ saved = localStorage.getItem('ub-brief-filter') || 'ALL'; }catch(e){}
-  setFilter(saved);
+  coinBtns.forEach(function(b){ b.addEventListener('click', function(){ setFilter(b.getAttribute('data-filter'), true); }); });
+  setFilter('ALL', false);
 
   document.querySelectorAll('.fold').forEach(function(f){
     var b = f.querySelector('.fold-btn');

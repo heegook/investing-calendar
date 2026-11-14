@@ -78,10 +78,10 @@ def build(basis):
     for i, (sym, *_r) in enumerate(COINS):
         v = stats[sym]["wk"]; y = T + i * rowh + rowh * 0.2; h = rowh * 0.6
         x0, x1 = sorted([sx(0), sx(v)])
-        g.append(f'<text class="lab" x="{L-10}" y="{y+h/2+4:.1f}" text-anchor="end">{sym}</text>')
+        g.append(f'<g class="cc c-{sym}"><text class="lab" x="{L-10}" y="{y+h/2+4:.1f}" text-anchor="end">{sym}</text>')
         g.append(f'<rect class="bar-{cls(v) or "down"}" x="{x0:.1f}" y="{y:.1f}" width="{max(x1-x0,1):.1f}" height="{h:.1f}" rx="2"/>')
         tx = max(sx(0), x1) + 6  # 값 라벨은 0축 오른쪽(또는 양수 막대 끝)에 배치해 코인명과 겹치지 않게 함
-        g.append(f'<text class="val {cls(v)}" x="{tx:.1f}" y="{y+h/2+4:.1f}" text-anchor="start">{pct(v)}</text>')
+        g.append(f'<text class="val {cls(v)}" x="{tx:.1f}" y="{y+h/2+4:.1f}" text-anchor="start">{pct(v)}</text></g>')
     g.append("</svg>")
     bar = "".join(g)
 
@@ -104,9 +104,9 @@ def build(basis):
     lab_y = {c[0]: ys[i] for i, (v, c) in enumerate(ends)}
     for sym, m, name, k in COINS:
         path = " ".join(f'{"M" if i==0 else "L"}{sx(i):.1f},{sy(v):.1f}' for i, v in enumerate(idx[sym]))
-        g.append(f'<path class="line s-{k}" d="{path}"/>')
+        g.append(f'<g class="cc c-{sym}"><path class="line s-{k}" d="{path}"/>')
         g.append(f'<circle class="dot f-{k}" cx="{sx(7):.1f}" cy="{sy(idx[sym][-1]):.1f}" r="3.6"/>')
-        g.append(f'<text class="lab f-{k}" x="{sx(7)+8:.1f}" y="{lab_y[sym]+4:.1f}">{sym} {idx[sym][-1]:.1f}</text>')
+        g.append(f'<text class="lab f-{k}" x="{sx(7)+8:.1f}" y="{lab_y[sym]+4:.1f}">{sym} {idx[sym][-1]:.1f}</text></g>')
     g.append("</svg>")
     line = "".join(g)
 
@@ -115,11 +115,11 @@ def build(basis):
     for i, k in enumerate(keys):
         p = pts[i]; cells = []
         for m in [c[1] for c in COINS] + ["KRW-USDT"]:
-            v = d[m][k]["trade_price"]
-            if i == 0: cells.append(f'<td class="r">{fmt(v)}</td>')
+            v = d[m][k]["trade_price"]; cc = f' cc c-{m[4:]}' if m != "KRW-USDT" else ""
+            if i == 0: cells.append(f'<td class="r{cc}">{fmt(v)}</td>')
             else:
                 ch = (v / d[m][keys[i-1]]["trade_price"] - 1) * 100
-                cells.append(f'<td class="r">{fmt(v)} <span class="{cls(ch)}" style="font-weight:600;font-size:12px">({pct(ch)})</span></td>')
+                cells.append(f'<td class="r{cc}">{fmt(v)} <span class="{cls(ch)}" style="font-weight:600;font-size:12px">({pct(ch)})</span></td>')
         tag = " · 7일 전" if i == 0 else " · 현재" if i == 7 else ""
         rows.append(f'<tr><td>{p.month}/{p.day}({WD[p.weekday()]}){tag}</td>{"".join(cells)}</tr>')
     daily = "".join(rows)
@@ -135,9 +135,9 @@ def build(basis):
         cells = []
         for sym, m, *_ in COINS:
             r = hist[b].get(m)
-            if not r: cells.append('<td class="r"><span class="na">미보고</span></td>'); continue
+            if not r: cells.append(f'<td class="r cc c-{sym}"><span class="na">미보고</span></td>'); continue
             v = float(r["weekly_return_pct"])
-            cells.append(f'<td class="r"><span class="{cls(v)}">{arrow(v)} {pct(v)}</span><br><span class="small">{fmt(float(r["price_now"]))}원</span></td>')
+            cells.append(f'<td class="r cc c-{sym}"><span class="{cls(v)}">{arrow(v)} {pct(v)}</span><br><span class="small">{fmt(float(r["price_now"]))}원</span></td>')
         fn = b[:10] + ".html"
         link = f'<a href="reports/{fn}">{fn}</a>' if os.path.exists(os.path.join(ROOT, "reports", fn)) or b[:10] == basis.isoformat() else '<span class="na">없음</span>'
         hrows.append(f'<tr><td>{b}</td>{"".join(cells)}<td>{link}</td></tr>')
@@ -157,8 +157,8 @@ def build(basis):
             return f'<td class="r"><b>{v:.1f}</b><br><span class="small">{lab}</span></td>'
         def cell(v, sub=""): return f'<td class="r"><b>{v}</b>{"<br><span class=small>" + sub + "</span>" if sub else ""}</td>'
         def table(rows):
-            head = "".join(f'<th class="r">{c[0]}</th>' for c in COINS)
-            body = "".join(f'<tr><td>{name}<br><span class="small">{basis_}</span></td>{"".join(fn(T[c[0]]) for c in COINS)}</tr>' for name, basis_, fn in rows)
+            head = "".join(f'<th class="r cc c-{c[0]}">{c[0]}</th>' for c in COINS)
+            body = "".join(f'<tr><td>{name}<br><span class="small">{basis_}</span></td>{"".join(fn(T[c[0]]).replace(chr(60) + "td class=" + chr(34) + "r", chr(60) + "td class=" + chr(34) + "r cc c-" + c[0], 1) for c in COINS)}</tr>' for name, basis_, fn in rows)
             return f'<div class="tbl-wrap"><table class="num"><thead><tr><th>지표</th>{head}</tr></thead><tbody>{body}</tbody></table></div>'
         tech["{{TECH_SHORT}}"] = table([
             ("1시간봉 RSI(14)", "11/14 08:00~09:00 봉까지", lambda r: cell_rsi(r["h1_rsi"])),
@@ -188,6 +188,10 @@ def build(basis):
 
     now = dt.datetime.now(KST)
     gen = f"{now:%Y-%m-%d}({WD[now.weekday()]}) {now:%H:%M} KST"
+    # 작성 시각은 본문 내용을 마지막으로 고친 시각으로 고정함 (화면 수정만으로 바뀌지 않게)
+    gt = os.path.join(ROOT, "reports", "src", f"{basis.isoformat()}.gentime")
+    if os.path.exists(gt): gen = open(gt, encoding="utf-8").read().strip()
+    else: open(gt, "w", encoding="utf-8").write(gen + "\n")
     body = open(os.path.join(ROOT, "reports", "src", f"{basis.isoformat()}.body.html"), encoding="utf-8").read()
     for k, v in {"{{CARDS}}": "".join(cards), "{{BARCHART}}": bar, "{{LINECHART}}": line, "{{DAILYTABLE}}": daily,
                  "{{HISTORY}}": history, "{{GEN_TIME}}": gen, **tech}.items():
