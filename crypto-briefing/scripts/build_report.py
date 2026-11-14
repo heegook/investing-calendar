@@ -9,6 +9,8 @@
   · dist/artifact.html       Claude 아티팩트 게시용 (doctype/head 제외본)
 """
 import csv, datetime as dt, glob, html, json, os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from indicators import compute
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KST = dt.timezone(dt.timedelta(hours=9))
@@ -141,11 +143,54 @@ def build(basis):
         hrows.append(f'<tr><td>{b}</td>{"".join(cells)}<td>{link}</td></tr>')
     history = "".join(hrows) or '<tr><td colspan="6">기록 없음</td></tr>'
 
+    # 기간별 기술적 지표 표 (원자료가 있을 때만)
+    raw = os.path.join(ROOT, "data", "raw", basis.isoformat())
+    tech = {"{{TECH_SHORT}}": "", "{{TECH_MID}}": "", "{{TECH_LONG}}": ""}
+    if os.path.exists(os.path.join(raw, "day200_KRW-BTC.json")):
+        T = {c[0]: compute(raw, c[1]) for c in COINS}
+        def gap(r, k): return (r["last"] / r[k] - 1) * 100
+        def cell_gap(r, k):
+            v = gap(r, k); word = "상회" if v > 0 else "하회"
+            return f'<td class="r"><span class="{cls(v)}">{("+" if v > 0 else "−")}{abs(v):.1f}%</span><br><span class="small">{word} · {fmt(r[k])}</span></td>'
+        def cell_rsi(v):
+            lab = "과매도(30↓)" if v < 30 else "과매수(70↑)" if v > 70 else "약세권(30~50)" if v < 50 else "강세권(50~70)"
+            return f'<td class="r"><b>{v:.1f}</b><br><span class="small">{lab}</span></td>'
+        def cell(v, sub=""): return f'<td class="r"><b>{v}</b>{"<br><span class=small>" + sub + "</span>" if sub else ""}</td>'
+        def table(rows):
+            head = "".join(f'<th class="r">{c[0]}</th>' for c in COINS)
+            body = "".join(f'<tr><td>{name}<br><span class="small">{basis_}</span></td>{"".join(fn(T[c[0]]) for c in COINS)}</tr>' for name, basis_, fn in rows)
+            return f'<div class="tbl-wrap"><table class="num"><thead><tr><th>지표</th>{head}</tr></thead><tbody>{body}</tbody></table></div>'
+        tech["{{TECH_SHORT}}"] = table([
+            ("1시간봉 RSI(14)", "11/14 08:00~09:00 봉까지", lambda r: cell_rsi(r["h1_rsi"])),
+            ("4시간봉 RSI(14)", "11/14 05:00~09:00 봉까지", lambda r: cell_rsi(r["h4_rsi"])),
+            ("1시간봉 60이평 대비", "약 2.5일 평균", lambda r: cell_gap(r, "h1_ma60")),
+            ("최근 24시간 고가 / 저가", "11/13 09:00~11/14 09:00", lambda r: cell(f'{fmt(r["h24_hi"])} / {fmt(r["h24_lo"])}')),
+            ("일봉 ATR(14) ÷ 종가", "하루 평균 진폭", lambda r: cell(f'{r["atr_d_pct"]:.1f}%', "목표가 아님, 변동성 참고")),
+        ])
+        tech["{{TECH_MID}}"] = table([
+            ("일봉 RSI(14)", "11/13 일봉까지", lambda r: cell_rsi(r["d_rsi"])),
+            ("볼린저밴드 %B (20, 2σ)", "0 미만 = 하단 밴드 아래", lambda r: cell(f'{r["pctb"]:+.2f}'.replace("-", "−"), "하단 이탈" if r["pctb"] < 0 else "하단 부근" if r["pctb"] < 0.2 else "밴드 안")),
+            ("MACD 히스토그램 (12,26,9)", "전일 대비", lambda r: cell("음(−)" if r["macd_h"] < 0 else "양(+)", "음(−) 확대" if r["macd_h"] < r["macd_h_prev"] else "음(−) 축소" if r["macd_h"] < 0 else "양(+)")),
+            ("5일 이평 대비", "단기 추세", lambda r: cell_gap(r, "ma5")),
+            ("20일 이평 대비", "약 1개월 추세", lambda r: cell_gap(r, "ma20")),
+            ("20일 고가 / 저가", "최근 20개 일봉", lambda r: cell(f'{fmt(r["hi20"])} / {fmt(r["lo20"])}')),
+            ("11/13 거래대금 ÷ 직전 20일 평균", "업비트 KRW 마켓", lambda r: cell(f'{r["vol_ratio"]:.2f}배', "급증" if r["vol_ratio"] >= 2 else "증가" if r["vol_ratio"] >= 1.2 else "평균 수준")),
+            ("연속 하락 마감 일수", "일봉 종가 기준", lambda r: cell(f'{r["down_streak"]}일')),
+        ])
+        tech["{{TECH_LONG}}"] = table([
+            ("200주 이평 대비", "약 4년 평균", lambda r: cell_gap(r, "w_ma200")),
+            ("20주 / 50주 이평 배열", "중장기 추세", lambda r: cell("20주 < 50주" if r["w_ma20"] < r["w_ma50"] else "20주 > 50주", "역배열(약세)" if r["w_ma20"] < r["w_ma50"] else "정배열")),
+            ("50주 이평 대비", "약 1년 평균", lambda r: cell_gap(r, "w_ma50")),
+            ("주봉 RSI(14)", "11/9 주 진행 중 봉 포함", lambda r: cell_rsi(r["w_rsi"])),
+            ("52주 고점 대비", "주봉 고가 기준", lambda r: cell(pct((r["last"] / r["hi52"] - 1) * 100), f'고점 {fmt(r["hi52"])}')),
+            ("52주 저가 대비", "주봉 저가 기준", lambda r: cell(pct((r["last"] / r["lo52"] - 1) * 100), f'저가 {fmt(r["lo52"])}')),
+        ])
+
     now = dt.datetime.now(KST)
     gen = f"{now:%Y-%m-%d}({WD[now.weekday()]}) {now:%H:%M} KST"
     body = open(os.path.join(ROOT, "reports", "src", f"{basis.isoformat()}.body.html"), encoding="utf-8").read()
     for k, v in {"{{CARDS}}": "".join(cards), "{{BARCHART}}": bar, "{{LINECHART}}": line, "{{DAILYTABLE}}": daily,
-                 "{{HISTORY}}": history, "{{GEN_TIME}}": gen}.items():
+                 "{{HISTORY}}": history, "{{GEN_TIME}}": gen, **tech}.items():
         body = body.replace(k, v)
     tpl = open(os.path.join(ROOT, "scripts", "template.html"), encoding="utf-8").read()
     fragment = tpl.replace("{{BODY}}", body)
