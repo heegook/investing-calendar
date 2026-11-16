@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>업비트 코인 주간 브리핑</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: 1080px 단일 칼럼 리서치 노트, 상단 네이비 표지 밴드 + 스티키 툴바, 섹션은 번호 ①~⑥ 순서 */
+:root{
+  --bg:#ffffff; --surface:#f5f7fb; --surface-2:#eaeef6; --line:#d8dee9; --line-strong:#9aa6ba;
+  --ink:#121a2b; --ink-2:#3a4459; --muted:#647089;
+  --navy:#13294b; --navy-2:#1f3b68; --on-navy:#ffffff; --on-navy-2:#c9d4e8;
+  --up:#c62828; --up-bg:#fdecec; --down:#1d5fbf; --down-bg:#e8f0fc;
+  --fact:#1d6b47; --fact-bg:#e6f4ec; --media:#7a5a00; --media-bg:#fbf3dc; --view:#5a3d99; --view-bg:#efe9fb; --warn:#9a3412; --warn-bg:#fdeee4;
+  --link:#1f4f9a; --strong:#13294b; --c-btc:#c77700; --c-eth:#4f55c5; --c-xrp:#0e8587; --c-doge:#b03f73;
+  --font:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕","Noto Sans KR","Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1422; --surface:#141d2f; --surface-2:#1b263b; --line:#2a3650; --line-strong:#4a5a7a;
+  --ink:#e8edf6; --ink-2:#c3cbdb; --muted:#8f9bb3;
+  --navy:#0a1730; --navy-2:#1a2f55; --on-navy:#f2f5fb; --on-navy-2:#aab8d3;
+  --up:#ff6b6b; --up-bg:#3a1a1e; --down:#6aa5ff; --down-bg:#14264a;
+  --fact:#5fd39a; --fact-bg:#12301f; --media:#e7c15a; --media-bg:#33290d; --view:#b79cff; --view-bg:#271d42; --warn:#ffa177; --warn-bg:#3a2014;
+  --link:#9cc0ff; --strong:#3d68b5; --c-btc:#f0a63a; --c-eth:#8f95ff; --c-xrp:#3cc6c8; --c-doge:#ee7fb0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1422; --surface:#141d2f; --surface-2:#1b263b; --line:#2a3650; --line-strong:#4a5a7a;
+  --ink:#e8edf6; --ink-2:#c3cbdb; --muted:#8f9bb3;
+  --navy:#0a1730; --navy-2:#1a2f55; --on-navy:#f2f5fb; --on-navy-2:#aab8d3;
+  --up:#ff6b6b; --up-bg:#3a1a1e; --down:#6aa5ff; --down-bg:#14264a;
+  --fact:#5fd39a; --fact-bg:#12301f; --media:#e7c15a; --media-bg:#33290d; --view:#b79cff; --view-bg:#271d42; --warn:#ffa177; --warn-bg:#3a2014;
+  --link:#9cc0ff; --strong:#3d68b5; --c-btc:#f0a63a; --c-eth:#8f95ff; --c-xrp:#3cc6c8; --c-doge:#ee7fb0; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15.5px;line-height:1.7;margin:0;word-break:keep-all;overflow-wrap:anywhere}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--navy)}
+a{color:var(--link);text-underline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.num{font-variant-numeric:tabular-nums}
+h1,h2,h3,h4{text-wrap:balance;line-height:1.35;margin:0}
+p{margin:0}
+
+/* 표지 */
+.cover{background:var(--navy);color:var(--on-navy)}
+.cover .wrap{padding-block:40px 32px;display:grid;gap:20px}
+.eyebrow{font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--on-navy-2);font-weight:600}
+.cover h1{font-size:clamp(26px,4.2vw,38px);font-weight:800;letter-spacing:-.01em}
+.cover .sub{color:var(--on-navy-2);font-size:15px;max-width:60ch}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.18);border-radius:8px;overflow:hidden}
+.meta div{background:var(--navy);padding:12px 14px;display:grid;gap:2px}
+.meta dt{font-size:12px;color:var(--on-navy-2);letter-spacing:.04em}
+.meta dd{margin:0;font-weight:700;font-size:14.5px}
+.snapshot-flag{display:inline-flex;gap:8px;align-items:center;font-size:13px;color:var(--on-navy);border:1px solid rgba(255,255,255,.35);padding:4px 10px;border-radius:999px;width:max-content;max-width:100%}
+.snapshot-flag::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--on-navy-2)}
+
+/* 툴바 */
+.toolbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.toolbar .wrap{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;padding-block:10px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.btn{font:inherit;font-size:13.5px;font-weight:600;border:1px solid var(--line-strong);background:var(--bg);color:var(--ink);padding:6px 12px;border-radius:6px;cursor:pointer;line-height:1.3}
+.btn:hover{background:var(--surface)}
+.btn:focus-visible,.fold-btn:focus-visible,a:focus-visible{outline:2px solid var(--navy-2);outline-offset:2px}
+.btn[aria-pressed="true"]{background:var(--strong);border-color:var(--strong);color:#fff}
+.btn.primary{background:var(--strong);color:#fff;border-color:var(--strong)}
+.tool-note{font-size:12.5px;color:var(--muted);width:100%}
+.tool-note[data-empty="1"]{display:none}
+
+/* 섹션 */
+main .wrap{display:grid;gap:56px;padding-block:36px 64px}
+section.block{display:grid;gap:20px;min-width:0}
+.sec-head{display:grid;gap:6px;border-bottom:2px solid var(--strong);padding-bottom:10px}
+.sec-head .no{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.06em}
+.sec-head h2{font-size:clamp(20px,2.6vw,25px);font-weight:800;color:var(--ink)}
+.sec-head p{color:var(--muted);font-size:14px}
+h3{font-size:18px;font-weight:750}
+h4{font-size:15px;font-weight:750;color:var(--ink-2)}
+.lead{font-size:16.5px;color:var(--ink-2);max-width:72ch}
+.prose{display:grid;gap:12px;max-width:76ch}
+.small{font-size:13px;color:var(--muted)}
+
+/* 태그 */
+.tag{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:4px;margin-right:6px;vertical-align:1px;white-space:nowrap}
+.t-fact{color:var(--fact);background:var(--fact-bg)}
+.t-media{color:var(--media);background:var(--media-bg)}
+.t-view{color:var(--view);background:var(--view-bg)}
+.t-warn{color:var(--warn);background:var(--warn-bg)}
+.legend-tags{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted);align-items:center}
+
+/* 핵심 3가지 */
+.keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.key{border:1px solid var(--line);border-top:3px solid var(--strong);border-radius:6px;padding:16px 18px;display:grid;gap:8px;align-content:start;background:var(--bg)}
+.key .k-no{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.08em}
+.key h3{font-size:16.5px}
+.key p{font-size:14.5px;color:var(--ink-2)}
+.analysis{background:var(--surface);border-radius:8px;padding:20px 22px;display:grid;gap:10px}
+
+/* 가격 카드 */
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:900px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:460px){.cards{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:10px;background:var(--bg);min-width:0}
+.card-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sym{font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px}
+.sym i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.mk{font-size:12px;color:var(--muted)}
+.price{font-size:22px;font-weight:800;letter-spacing:-.01em}
+.row{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;color:var(--ink-2);border-top:1px dashed var(--line);padding-top:6px}
+.row span:first-child{color:var(--muted)}
+.chg{display:inline-flex;gap:6px;align-items:center;font-weight:800;padding:3px 9px;border-radius:5px;font-size:15px;width:max-content}
+.chg.up{color:var(--up);background:var(--up-bg)}
+.chg.down{color:var(--down);background:var(--down-bg)}
+.chg small{font-weight:600;font-size:12px}
+.vs{font-size:12px;color:var(--muted)}
+
+/* 차트 */
+.charts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:20px}
+@media (max-width:900px){.charts{grid-template-columns:minmax(0,1fr)}}
+figure{margin:0;border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:10px;min-width:0;background:var(--bg)}
+figcaption{font-weight:750;font-size:15px}
+figure .note{font-size:12.5px;color:var(--muted)}
+.chart-box{overflow-x:auto}
+.chart-box svg{display:block;width:100%;height:auto;min-width:300px}
+svg text{font-family:var(--font)}
+.ax{stroke:var(--line);stroke-width:1}
+.ax0{stroke:var(--line-strong);stroke-width:1.2}
+.tick{fill:var(--muted);font-size:11px}
+.lab{fill:var(--ink);font-size:12px;font-weight:700}
+.val{font-size:12px;font-weight:800}
+.val.down{fill:var(--down)} .val.up{fill:var(--up)}
+.bar-down{fill:var(--down)} .bar-up{fill:var(--up)}
+.s-btc{stroke:var(--c-btc)} .f-btc{fill:var(--c-btc)}
+.s-eth{stroke:var(--c-eth)} .f-eth{fill:var(--c-eth)}
+.s-xrp{stroke:var(--c-xrp)} .f-xrp{fill:var(--c-xrp)}
+.s-doge{stroke:var(--c-doge)} .f-doge{fill:var(--c-doge)}
+.line{fill:none;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.dot{stroke:var(--bg);stroke-width:1.5}
+.bg-rect{fill:var(--bg)}
+
+/* 표 */
+.tbl-wrap{overflow-x:auto;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px}
+th,td{padding:9px 10px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:none}
+thead th{background:var(--surface-2);font-weight:700;color:var(--ink);white-space:nowrap}
+td.r,th.r{text-align:right}
+td .up{color:var(--up);font-weight:700} td .down{color:var(--down);font-weight:700}
+.na{color:var(--muted);font-style:normal;font-weight:600}
+
+/* 코인 상세 */
+.coin-panel{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
+.coin-head{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--surface);border-bottom:1px solid var(--line)}
+.coin-head h3{display:flex;gap:10px;align-items:center;font-size:19px}
+.coin-head h3 i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.coin-body{padding:8px 20px 18px;display:grid}
+.fold{border-bottom:1px solid var(--line)}
+.fold:last-child{border-bottom:none}
+.fold-btn{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 2px;font-weight:750;font-size:15px;color:var(--ink)}
+.fold-btn::after{content:"＋";font-weight:400;color:var(--muted);font-size:18px;line-height:1}
+.fold:not(.collapsed) > .fold-btn::after{content:"－"}
+.fold-body{padding:0 2px 16px;display:grid;gap:10px;min-width:0}
+.fold.collapsed > .fold-body{display:none}
+ul.pts{margin:0;padding-left:1.15em;display:grid;gap:7px}
+ul.pts li::marker{color:var(--muted)}
+.argue{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:700px){.argue{grid-template-columns:1fr}}
+.arg{border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:grid;gap:6px;align-content:start}
+.arg .hd{font-weight:800;font-size:14px}
+.arg .hd.up{color:var(--up)} .arg .hd.down{color:var(--down)}
+.arg .counter{border-top:1px dashed var(--line);padding-top:6px;font-size:14px;color:var(--ink-2)}
+.arg .counter b{color:var(--muted);font-size:12.5px;margin-right:4px}
+.is-filtered, .sig-list li.is-filtered{display:none}
+body[data-focus] .cc{opacity:.22;transition:opacity .15s}
+body[data-focus="BTC"] .c-BTC, body[data-focus="ETH"] .c-ETH, body[data-focus="XRP"] .c-XRP, body[data-focus="DOGE"] .c-DOGE{opacity:1}
+td.c-on, th.c-on{background:transparent}
+.filter-note{font-size:12.5px;font-weight:600;color:var(--strong);width:100%}
+.filter-note[data-empty="1"]{display:none}
+
+/* 뉴스 목록 */
+.news{display:grid;gap:0;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.news-item{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:6px 20px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.news-item:last-child{border-bottom:none}
+@media (max-width:760px){.news-item{grid-template-columns:minmax(0,1fr)}}
+.news-item .what{font-size:14.5px}
+.news-item .src{font-size:12.5px;color:var(--muted);display:grid;gap:2px}
+.news-item .src a{font-weight:600}
+
+/* 시나리오 */
+.scen{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.sc{border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:8px;align-content:start}
+.sc h4{color:var(--ink)}
+.sc dl{margin:0;display:grid;gap:6px;font-size:14px}
+.sc dt{font-weight:700;font-size:12.5px;color:var(--muted)}
+.sc dd{margin:0}
+
+
+/* 기간별 전망 */
+.hz{border:1px solid var(--line);border-radius:10px;padding:18px 20px;display:grid;gap:16px;background:var(--bg);min-width:0}
+.hz-head{display:flex;gap:14px;align-items:flex-start}
+.hz-chip{flex:none;font-size:13px;font-weight:800;color:#fff;background:var(--strong);padding:4px 12px;border-radius:5px;letter-spacing:.04em}
+.hz-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+@media (max-width:800px){.hz-grid{grid-template-columns:minmax(0,1fr)}}
+.sig-list{list-style:none;margin:0;padding:0;display:grid;gap:9px;font-size:14.5px}
+.sig-list li{display:block;line-height:1.65}
+.sig-list b{margin-right:6px}
+.sig{display:inline-block;margin-right:8px;vertical-align:1px;font-size:11.5px;font-weight:800;padding:1px 8px;border-radius:4px;border:1px solid currentColor}
+.sig.down{color:var(--down)} .sig.up{color:var(--up)} .sig.mixed{color:var(--muted)}
+/* 출처 */
+.src-list{display:grid;gap:4px;margin:0;padding-left:1.4em;font-size:13.5px}
+.src-list li{padding:3px 0}
+.src-list .dom{color:var(--muted);font-size:12px}
+.callout{border-left:3px solid var(--warn);background:var(--warn-bg);padding:12px 16px;border-radius:0 6px 6px 0;font-size:14px;display:grid;gap:6px}
+.howto{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.howto ol{margin:0;padding-left:1.3em;display:grid;gap:6px;font-size:14px}
+code{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+footer .wrap{padding-block:20px 32px;display:grid;gap:6px}
+
+@media (prefers-reduced-motion:no-preference){.btn,.fold-btn::after{transition:background .15s,color .15s}}
+
+/* 인쇄: A4 세로, 숨김 탭·접힌 내용 모두 출력 */
+@page{size:A4;margin:14mm 12mm 16mm}
+@media print{
+  :root{--bg:#fff;--surface:#f4f6fa;--surface-2:#e9edf4;--ink:#000;--ink-2:#222;--muted:#555;--line:#c9d0dc}
+  body{font-size:10.5pt;line-height:1.55;background:#fff;color:#000}
+  body::before{display:none}
+  .toolbar{display:none!important}
+  .cover{background:#fff!important;color:#000!important;border-bottom:2.5pt solid #13294b}
+  .cover .wrap{padding-block:0 12px}
+  .cover .eyebrow,.cover .sub{color:#333!important}
+  .meta{background:#c9d0dc;border-color:#c9d0dc}
+  .meta div{background:#fff!important}
+  .meta dt{color:#555!important} .meta dd{color:#000}
+  .snapshot-flag{color:#000;border-color:#999}
+  .wrap{max-width:none;padding-left:0;padding-right:0}
+  main .wrap{gap:22px;padding-block:14px 0}
+  .is-filtered{display:block!important}
+  .sig-list li.is-filtered{display:block!important}
+  .cc{opacity:1!important}
+  .filter-note{display:none!important}
+  .fold.collapsed > .fold-body{display:grid!important}
+  .fold-btn::after{display:none}
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .keys{grid-template-columns:repeat(3,1fr)}
+  .meta{grid-template-columns:repeat(2,1fr)}
+  .charts{grid-template-columns:1fr 1fr}
+  .card,.key,figure,.sc,.arg,.news-item,tr,.fold-btn{break-inside:avoid}
+  .sec-head{break-after:avoid}
+  section.block{break-inside:auto}
+  #sec-detail,#sec-outlook,#sec-sources{break-before:page}
+  .hz{break-inside:auto}
+  .hz-grid{grid-template-columns:1fr 1fr}
+  .hz-head,.sig-list li{break-inside:avoid}
+  .coin-panel{margin-bottom:10px}
+  .coin-head{break-after:avoid}
+  .tbl-wrap,.chart-box{overflow:visible}
+  table{min-width:0;font-size:9.5pt}
+  .chart-box svg{min-width:0}
+  a{color:#000;text-decoration:underline}
+  footer{font-size:9pt}
+}
+</style>
+</head>
+<body>
+
+
+<header class="cover">
+  <div class="wrap">
+    <div class="eyebrow">UPBIT KRW MARKET · WEEKLY CRYPTO BRIEFING</div>
+    <h1>업비트 코인 주간 브리핑 <span class="num">2026.11.16</span></h1>
+    <p class="sub">BTC·ETH·XRP·DOGE 4종 업비트 원화 가격 기준 최근 7일 점검, 주말 급락과 반등·자금흐름·레버리지·국내 요인 정리</p>
+    <dl class="meta">
+      <div><dt>작성 시각</dt><dd class="num">2026-11-17(화) 08:33 KST</dd></div>
+      <div><dt>분석 기간</dt><dd class="num">2026-11-09(월) 09:00 ~ 2026-11-16(월) 09:00 KST</dd></div>
+      <div><dt>가격 기준 시각</dt><dd class="num">2026-11-16(월) 09:00 KST · 업비트 일봉 종가</dd></div>
+      <div><dt>정기 열람</dt><dd>매주 수요일·금요일 07:00 KST</dd></div>
+    </dl>
+    <span class="snapshot-flag">기준 시점 스냅샷 · 실시간 시세 아님 (자동 갱신 미구현)</span>
+  </div>
+</header>
+
+<nav class="toolbar" aria-label="보고서 도구">
+  <div class="wrap">
+    <div class="seg" role="group" aria-label="코인 필터">
+      <button class="btn" type="button" data-filter="ALL" aria-pressed="true">전체</button>
+      <button class="btn" type="button" data-filter="BTC" aria-pressed="false">BTC</button>
+      <button class="btn" type="button" data-filter="ETH" aria-pressed="false">ETH</button>
+      <button class="btn" type="button" data-filter="XRP" aria-pressed="false">XRP</button>
+      <button class="btn" type="button" data-filter="DOGE" aria-pressed="false">DOGE</button>
+    </div>
+    <div class="seg">
+      <button class="btn" type="button" id="btn-open">모두 펼치기</button>
+      <button class="btn" type="button" id="btn-close">모두 접기</button>
+      <button class="btn primary" type="button" id="btn-print">인쇄 / PDF 저장</button>
+    </div>
+    <p class="filter-note" id="filter-note" data-empty="1" aria-live="polite"></p>
+    <p class="tool-note" id="print-note" data-empty="1"></p>
+  </div>
+</nav>
+
+<main>
+<div class="wrap">
+
+<!-- ① 핵심 요약 -->
+<section class="block" id="sec-summary">
+  <div class="sec-head"><span class="no">① 표지와 핵심 요약</span><h2>이번 주 핵심 변화 3가지</h2>
+    <p>이번 회차는 11/14(토)판과 분석 기간이 5일 겹치므로(11/9~11/14), 새로 추가된 11/14~16 움직임과 지난 회차 관찰 기준의 결과를 중심으로 정리함</p></div>
+  <div class="legend-tags">
+    <span><span class="tag t-fact">사실</span>공식 발표·거래소 데이터로 확인</span>
+    <span><span class="tag t-media">언론</span>언론·데이터업체 보도 (원문 일부 미열람)</span>
+    <span><span class="tag t-view">해석</span>본 보고서의 자체 해석·추정</span>
+    <span>상승 <b style="color:var(--up)">▲ +</b> / 하락 <b style="color:var(--down)">▼ −</b> (국내 관행: 상승 빨강, 하락 파랑)</span>
+  </div>
+  <div class="keys">
+    <article class="key">
+      <span class="k-no">KEY 1 · 가격</span>
+      <h3>주말 투매로 52주 저가 경신 후 일부 반등</h3>
+      <p><span class="tag t-fact">사실</span>11/14(토) 일봉에서 BTC −4.69%, ETH −6.92%, XRP −8.19%, DOGE −9.88%로 급락했고, BTC는 11/15 장중 86,110,000원까지 내려가 8월 저가(88,342,000원)를 밑도는 52주 저가를 기록했음</p>
+      <p><span class="tag t-fact">사실</span>11/15 일봉은 BTC +1.23%, ETH +3.14%, XRP +5.92%, DOGE +3.78%로 반등했으나 주간 등락률은 4종 모두 −12.1%~−13.4%임</p>
+    </article>
+    <article class="key">
+      <span class="k-no">KEY 2 · 수급</span>
+      <h3>ETF 7거래일 연속 유출, 주말 청산 약 20억달러</h3>
+      <p><span class="tag t-media">언론</span>미국 BTC 현물 ETF는 11/5~11/13 7거래일 연속 순유출로 누적 −19.07억달러(Farside 기준), 11/13 하루 −1.854억달러였음</p>
+      <p><span class="tag t-media">언론</span>11/15 아시아 오전까지 24시간 청산이 약 20억달러(Coinglass 인용)로 대부분 롱 포지션이었다는 보도가 있으며, 집계 구간에 따라 17.1억~20억달러로 다름</p>
+    </article>
+    <article class="key">
+      <span class="k-no">KEY 3 · 거시</span>
+      <h3>12월 인상 확률 100% 반영, 달러 강세</h3>
+      <p><span class="tag t-media">언론</span>CME FedWatch 기준 12월 금리인상 확률이 100%로 반영됐다는 보도(11/16)가 나왔고, 일부 연준 인사는 추가 인상 필요성을 언급했음</p>
+      <p><span class="tag t-media">언론</span>달러인덱스가 1년 7개월여 만의 최고 수준이라는 국내 보도가 있으나, 원/달러는 11/16 1,335.7원으로 주간 기준 큰 변화가 없었음</p>
+    </article>
+  </div>
+  <div class="analysis">
+    <h3>시장 상황 분석</h3>
+    <p>○ 지난 회차에서 BTC 관찰 기준으로 제시한 기간 저가 92,500,000원은 11/14(토) 오전에 무너졌고, 주말 얇은 유동성 속에서 레버리지 롱 청산이 이어지며 저점이 86,110,000원까지 밀렸으므로 지난 회차의 ‘저점 이탈 시나리오’가 성립했다고 판단함 <span class="tag t-view">해석</span></p>
+    <p>○ 다만 BTC 주봉 종가(11/16 09:00)는 89,949,000원으로 8월 저가 위에서 마감했으므로 장기 ‘바닥 다지기’ 시나리오의 무효화 조건(주봉 종가 기준 8월 저가 하회)은 아직 발생하지 않았음 <span class="tag t-fact">사실</span> 장중 저점은 깨고 종가는 지킨 모습이므로 이번 주 반등이 이어지는지가 중요함 <span class="tag t-view">해석</span></p>
+    <p>○ 하락 원인에 대한 언론 설명은 지난주와 같이 12월 금리인상 확정 분위기, ETF 연속 유출, 레버리지 청산이 중심이며, 이번 주 새 일정은 11/18(수) 07:00 KST 전후의 엔비디아 실적 발표임 <span class="tag t-media">언론</span> 기간별 기술적·수급 신호는 ⑤에서 정리함</p>
+  </div>
+</section>
+
+<!-- ② 가격 대시보드 -->
+<section class="block" id="sec-price">
+  <div class="sec-head"><span class="no">② 가격 대시보드</span><h2>업비트 KRW 마켓 주간 가격</h2>
+    <p>현재 가격 = 2026-11-16 09:00 KST 직전 마지막 체결가(11/15 일봉 종가) · 7일 전 가격 = 2026-11-09 09:00 KST 직전 마지막 체결가(11/8 일봉 종가) · 주간 등락률 = (현재 가격 ÷ 7일 전 가격 − 1) × 100</p></div>
+  <div class="cards"><article class="card" data-coin="BTC">
+  <div class="card-top"><span class="sym"><i class="f-btc" style="background:var(--c-btc)"></i>BTC</span><span class="mk">비트코인 · KRW-BTC</span></div>
+  <div><div class="vs">현재 가격 (11/16 09:00)</div><div class="price num">89,949,000원</div></div>
+  <span class="chg down num">▼ −12.21% <small>주간 하락</small></span>
+  <div class="row num"><span>7일 전 가격</span><span>102,460,000원</span></div>
+  <div class="row num"><span>기간 고가 / 저가</span><span>103,189,000 / 86,110,000</span></div>
+  <div class="row num"><span>최근 1일 (참고)</span><span class="up" style="color:var(--up)">+1.23%</span></div>
+</article><article class="card" data-coin="ETH">
+  <div class="card-top"><span class="sym"><i class="f-eth" style="background:var(--c-eth)"></i>ETH</span><span class="mk">이더리움 · KRW-ETH</span></div>
+  <div><div class="vs">현재 가격 (11/16 09:00)</div><div class="price num">2,526,000원</div></div>
+  <span class="chg down num">▼ −13.37% <small>주간 하락</small></span>
+  <div class="row num"><span>7일 전 가격</span><span>2,916,000원</span></div>
+  <div class="row num"><span>기간 고가 / 저가</span><span>2,947,000 / 2,375,000</span></div>
+  <div class="row num"><span>최근 1일 (참고)</span><span class="up" style="color:var(--up)">+3.14%</span></div>
+</article><article class="card" data-coin="XRP">
+  <div class="card-top"><span class="sym"><i class="f-xrp" style="background:var(--c-xrp)"></i>XRP</span><span class="mk">리플 · KRW-XRP</span></div>
+  <div><div class="vs">현재 가격 (11/16 09:00)</div><div class="price num">1,341원</div></div>
+  <span class="chg down num">▼ −12.12% <small>주간 하락</small></span>
+  <div class="row num"><span>7일 전 가격</span><span>1,526원</span></div>
+  <div class="row num"><span>기간 고가 / 저가</span><span>1,540 / 1,239</span></div>
+  <div class="row num"><span>최근 1일 (참고)</span><span class="up" style="color:var(--up)">+5.92%</span></div>
+</article><article class="card" data-coin="DOGE">
+  <div class="card-top"><span class="sym"><i class="f-doge" style="background:var(--c-doge)"></i>DOGE</span><span class="mk">도지코인 · KRW-DOGE</span></div>
+  <div><div class="vs">현재 가격 (11/16 09:00)</div><div class="price num">82.4원</div></div>
+  <span class="chg down num">▼ −12.80% <small>주간 하락</small></span>
+  <div class="row num"><span>7일 전 가격</span><span>94.5원</span></div>
+  <div class="row num"><span>기간 고가 / 저가</span><span>96.2 / 77.0</span></div>
+  <div class="row num"><span>최근 1일 (참고)</span><span class="up" style="color:var(--up)">+3.78%</span></div>
+</article></div>
+  <p class="small">※ 카드 하단 ‘최근 1일’은 11/15 09:00 → 11/16 09:00 일봉 등락률로 주간 등락률과 별개 지표임 · 업비트 앱의 ‘전일대비’(09:00 기준)와 같은 기준이며 7일 등락률과 혼동 금지 · 이번 주 주간 등락률은 업비트 11/9 주봉의 시가 대비 종가 변화와 같음</p>
+  <div class="charts">
+    <figure>
+      <figcaption>주간 수익률 비교 (%)</figcaption>
+      <div class="chart-box"><svg viewBox="0 0 460 200" role="img" aria-label="4종 주간 수익률 막대그래프"><rect class="bg-rect" x="0" y="0" width="460" height="200"/><line class="ax" x1="52.0" y1="10" x2="52.0" y2="174"/><text class="tick" x="52.0" y="188" text-anchor="middle">−16%</text><line class="ax" x1="136.5" y1="10" x2="136.5" y2="174"/><text class="tick" x="136.5" y="188" text-anchor="middle">−12%</text><line class="ax" x1="221.0" y1="10" x2="221.0" y2="174"/><text class="tick" x="221.0" y="188" text-anchor="middle">−8%</text><line class="ax" x1="305.5" y1="10" x2="305.5" y2="174"/><text class="tick" x="305.5" y="188" text-anchor="middle">−4%</text><line class="ax0" x1="390.0" y1="10" x2="390.0" y2="174"/><text class="tick" x="390.0" y="188" text-anchor="middle">0%</text><g class="cc c-BTC"><text class="lab" x="42" y="34.0" text-anchor="end">BTC</text><rect class="bar-down" x="132.1" y="18.0" width="257.9" height="24.0" rx="2"/><text class="val down" x="396.0" y="34.0" text-anchor="start">−12.21%</text></g><g class="cc c-ETH"><text class="lab" x="42" y="74.0" text-anchor="end">ETH</text><rect class="bar-down" x="107.5" y="58.0" width="282.5" height="24.0" rx="2"/><text class="val down" x="396.0" y="74.0" text-anchor="start">−13.37%</text></g><g class="cc c-XRP"><text class="lab" x="42" y="114.0" text-anchor="end">XRP</text><rect class="bar-down" x="133.9" y="98.0" width="256.1" height="24.0" rx="2"/><text class="val down" x="396.0" y="114.0" text-anchor="start">−12.12%</text></g><g class="cc c-DOGE"><text class="lab" x="42" y="154.0" text-anchor="end">DOGE</text><rect class="bar-down" x="119.5" y="138.0" width="270.5" height="24.0" rx="2"/><text class="val down" x="396.0" y="154.0" text-anchor="start">−12.80%</text></g></svg></div>
+      <p class="note">※ 같은 기준 시각(11/9 09:00 → 11/16 09:00 KST) 일봉 종가로 산출</p>
+    </figure>
+    <figure>
+      <figcaption>7일 가격 추이 (11/9 09:00 = 100 정규화)</figcaption>
+      <div class="chart-box"><svg viewBox="0 0 560 280" role="img" aria-label="7일 정규화 가격 추이"><rect class="bg-rect" x="0" y="0" width="560" height="280"/><line class="ax" x1="40" y1="250.0" x2="464" y2="250.0"/><text class="tick" x="34" y="254.0" text-anchor="end">80</text><line class="ax" x1="40" y1="202.8" x2="464" y2="202.8"/><text class="tick" x="34" y="206.8" text-anchor="end">85</text><line class="ax" x1="40" y1="155.6" x2="464" y2="155.6"/><text class="tick" x="34" y="159.6" text-anchor="end">90</text><line class="ax" x1="40" y1="108.4" x2="464" y2="108.4"/><text class="tick" x="34" y="112.4" text-anchor="end">95</text><line class="ax0" x1="40" y1="61.2" x2="464" y2="61.2"/><text class="tick" x="34" y="65.2" text-anchor="end">100</text><line class="ax" x1="40" y1="14.0" x2="464" y2="14.0"/><text class="tick" x="34" y="18.0" text-anchor="end">105</text><text class="tick" x="40.0" y="268" text-anchor="middle">11/9</text><text class="tick" x="100.6" y="268" text-anchor="middle">11/10</text><text class="tick" x="161.1" y="268" text-anchor="middle">11/11</text><text class="tick" x="221.7" y="268" text-anchor="middle">11/12</text><text class="tick" x="282.3" y="268" text-anchor="middle">11/13</text><text class="tick" x="342.9" y="268" text-anchor="middle">11/14</text><text class="tick" x="403.4" y="268" text-anchor="middle">11/15</text><text class="tick" x="464.0" y="268" text-anchor="middle">11/16</text><g class="cc c-BTC"><path class="line s-btc" d="M40.0,61.2 L100.6,63.1 L161.1,81.9 L221.7,80.8 L282.3,115.3 L342.9,146.3 L403.4,186.5 L464.0,176.5"/><circle class="dot f-btc" cx="464.0" cy="176.5" r="3.6"/><text class="lab f-btc" x="472.0" y="194.6">BTC 87.8</text></g><g class="cc c-ETH"><path class="line s-eth" d="M40.0,61.2 L100.6,67.0 L161.1,102.3 L221.7,102.6 L282.3,120.8 L342.9,153.5 L403.4,212.4 L464.0,187.5"/><circle class="dot f-eth" cx="464.0" cy="187.5" r="3.6"/><text class="lab f-eth" x="472.0" y="224.6">ETH 86.6</text></g><g class="cc c-XRP"><path class="line s-xrp" d="M40.0,61.2 L100.6,82.2 L161.1,116.9 L221.7,123.1 L282.3,134.8 L342.9,152.1 L403.4,222.0 L464.0,175.6"/><circle class="dot f-xrp" cx="464.0" cy="175.6" r="3.6"/><text class="lab f-xrp" x="472.0" y="179.6">XRP 87.9</text></g><g class="cc c-DOGE"><path class="line s-doge" d="M40.0,61.2 L100.6,56.2 L161.1,81.2 L221.7,91.2 L282.3,107.2 L342.9,125.1 L403.4,212.0 L464.0,182.1"/><circle class="dot f-doge" cx="464.0" cy="182.1" r="3.6"/><text class="lab f-doge" x="472.0" y="209.6">DOGE 87.2</text></g></svg></div>
+      <p class="note">※ 가격 단위가 다른 4종을 비교하기 위해 시작값 100으로 정규화 · 각 점은 해당일 09:00 KST 직전 종가 · 일별 데이터 8개 시점 모두 확보 · 장중 저점(11/14~15)은 종가 기준 선에 나타나지 않음</p>
+    </figure>
+  </div>
+  <div class="tbl-wrap">
+    <table class="num">
+      <thead><tr><th>시점 (KST 09:00)</th><th class="r cc c-BTC">BTC (원)</th><th class="r cc c-ETH">ETH (원)</th><th class="r cc c-XRP">XRP (원)</th><th class="r cc c-DOGE">DOGE (원)</th><th class="r">USDT (원)</th></tr></thead>
+      <tbody><tr><td>11/9(월) · 7일 전</td><td class="r cc c-BTC">102,460,000</td><td class="r cc c-ETH">2,916,000</td><td class="r cc c-XRP">1,526</td><td class="r cc c-DOGE">94.5</td><td class="r">1,370</td></tr><tr><td>11/10(화)</td><td class="r cc c-BTC">102,254,000 <span class="down" style="font-weight:600;font-size:12px">(−0.20%)</span></td><td class="r cc c-ETH">2,898,000 <span class="down" style="font-weight:600;font-size:12px">(−0.62%)</span></td><td class="r cc c-XRP">1,492 <span class="down" style="font-weight:600;font-size:12px">(−2.23%)</span></td><td class="r cc c-DOGE">95.0 <span class="up" style="font-weight:600;font-size:12px">(+0.53%)</span></td><td class="r">1,356 <span class="down" style="font-weight:600;font-size:12px">(−1.02%)</span></td></tr><tr><td>11/11(수)</td><td class="r cc c-BTC">100,215,000 <span class="down" style="font-weight:600;font-size:12px">(−1.99%)</span></td><td class="r cc c-ETH">2,789,000 <span class="down" style="font-weight:600;font-size:12px">(−3.76%)</span></td><td class="r cc c-XRP">1,436 <span class="down" style="font-weight:600;font-size:12px">(−3.75%)</span></td><td class="r cc c-DOGE">92.5 <span class="down" style="font-weight:600;font-size:12px">(−2.63%)</span></td><td class="r">1,357 <span class="up" style="font-weight:600;font-size:12px">(+0.07%)</span></td></tr><tr><td>11/12(목)</td><td class="r cc c-BTC">100,338,000 <span class="up" style="font-weight:600;font-size:12px">(+0.12%)</span></td><td class="r cc c-ETH">2,788,000 <span class="down" style="font-weight:600;font-size:12px">(−0.04%)</span></td><td class="r cc c-XRP">1,426 <span class="down" style="font-weight:600;font-size:12px">(−0.70%)</span></td><td class="r cc c-DOGE">91.5 <span class="down" style="font-weight:600;font-size:12px">(−1.08%)</span></td><td class="r">1,355 <span class="down" style="font-weight:600;font-size:12px">(−0.15%)</span></td></tr><tr><td>11/13(금)</td><td class="r cc c-BTC">96,590,000 <span class="down" style="font-weight:600;font-size:12px">(−3.74%)</span></td><td class="r cc c-ETH">2,732,000 <span class="down" style="font-weight:600;font-size:12px">(−2.01%)</span></td><td class="r cc c-XRP">1,407 <span class="down" style="font-weight:600;font-size:12px">(−1.33%)</span></td><td class="r cc c-DOGE">89.9 <span class="down" style="font-weight:600;font-size:12px">(−1.75%)</span></td><td class="r">1,352 <span class="down" style="font-weight:600;font-size:12px">(−0.22%)</span></td></tr><tr><td>11/14(토)</td><td class="r cc c-BTC">93,226,000 <span class="down" style="font-weight:600;font-size:12px">(−3.48%)</span></td><td class="r cc c-ETH">2,631,000 <span class="down" style="font-weight:600;font-size:12px">(−3.70%)</span></td><td class="r cc c-XRP">1,379 <span class="down" style="font-weight:600;font-size:12px">(−1.99%)</span></td><td class="r cc c-DOGE">88.1 <span class="down" style="font-weight:600;font-size:12px">(−2.00%)</span></td><td class="r">1,365 <span class="up" style="font-weight:600;font-size:12px">(+0.96%)</span></td></tr><tr><td>11/15(일)</td><td class="r cc c-BTC">88,858,000 <span class="down" style="font-weight:600;font-size:12px">(−4.69%)</span></td><td class="r cc c-ETH">2,449,000 <span class="down" style="font-weight:600;font-size:12px">(−6.92%)</span></td><td class="r cc c-XRP">1,266 <span class="down" style="font-weight:600;font-size:12px">(−8.19%)</span></td><td class="r cc c-DOGE">79.4 <span class="down" style="font-weight:600;font-size:12px">(−9.88%)</span></td><td class="r">1,384 <span class="up" style="font-weight:600;font-size:12px">(+1.39%)</span></td></tr><tr><td>11/16(월) · 현재</td><td class="r cc c-BTC">89,949,000 <span class="up" style="font-weight:600;font-size:12px">(+1.23%)</span></td><td class="r cc c-ETH">2,526,000 <span class="up" style="font-weight:600;font-size:12px">(+3.14%)</span></td><td class="r cc c-XRP">1,341 <span class="up" style="font-weight:600;font-size:12px">(+5.92%)</span></td><td class="r cc c-DOGE">82.4 <span class="up" style="font-weight:600;font-size:12px">(+3.78%)</span></td><td class="r">1,376 <span class="down" style="font-weight:600;font-size:12px">(−0.58%)</span></td></tr></tbody>
+    </table>
+  </div>
+  <p class="small">※ 출처: 업비트 Open API 일봉(candles/days), 조회 2026-11-17 08:26 KST · 괄호 안은 전일 09:00 대비 등락률</p>
+</section>
+
+<!-- ③ 코인별 상세 -->
+<section class="block" id="sec-detail">
+  <div class="sec-head"><span class="no">③ 코인별 상세 분석</span><h2>BTC · ETH · XRP · DOGE</h2>
+    <p>상단 필터로 코인을 고를 수 있으며 항목별 펼치기/접기 가능 · 인쇄 시 모든 코인과 접힌 항목이 함께 출력됨</p></div>
+
+  <!-- BTC -->
+  <article class="coin-panel" data-coin="BTC">
+    <div class="coin-head"><h3><i style="background:var(--c-btc)"></i>비트코인 BTC</h3><span class="chg down num">▼ −12.21% <small>주간 하락</small></span></div>
+    <div class="coin-body">
+      <div class="fold"><button class="fold-btn" type="button">주요 가격 변동과 배경</button><div class="fold-body">
+        <ul class="pts">
+          <li><span class="tag t-fact">사실</span>업비트 원화 기준 102,460,000원 → 89,949,000원(−12.21%), 기간 고가 103,189,000원(11/9 일봉) · 저가 86,110,000원(11/15 일봉)</li>
+          <li><span class="tag t-fact">사실</span>전반(11/9→11/13 09:00) −5.73%, 후반(11/13→11/16 09:00) −6.88%이며, 11/14 일봉 −4.69%가 가장 컸고 11/15 일봉은 +1.23% 반등했음 · 기간 저가 대비 종가 반등폭은 +4.46%</li>
+          <li><span class="tag t-fact">사실</span>주봉 기준 6주 연속 하락 마감(9/28 주 이후)이며 11/9 주봉 장중 저가가 52주 저가가 됐음</li>
+          <li><span class="tag t-media">언론</span>달러 기준으로는 11/14(미국시간) 6만6천달러를 하회했고 11/15 새벽 코인베이스에서 6만1,946달러까지 밀렸다가 11/16 오전 6만5천달러대를 회복했다는 국내 보도가 있음 (아주경제·글로벌이코노믹, 11/16)</li>
+          <li><span class="tag t-warn">출처 충돌</span>11/15 저점이 ‘7/14 이후 최저’라는 보도와 ‘8월 중순 이후 최저’라는 보도가 엇갈림 → 업비트 원화 기준으로는 52주 저가임을 사실로 사용함</li>
+        </ul>
+      </div></div>
+      <div class="fold"><button class="fold-btn" type="button">규제·거래소 공지·생태계 발표</button><div class="fold-body">
+        <ul class="pts">
+          <li>BTC 관련 업비트 입출금 중단·유의종목 지정 공지는 검색 범위 안에서 확인되지 않았음 (업비트 공지 원문 직접 조회 불가)</li>
+          <li><span class="tag t-media">언론</span>디지털자산기본법 정부안은 11월 중 공개 예정이라는 보도(MTN 11/9)가 있었으나 11/16까지 공개는 확인되지 않았음</li>
+        </ul>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">확인된 사실</button><div class="fold-body">
+        <ul class="pts">
+          <li><span class="tag t-media">언론</span>미국 BTC 현물 ETF 11/13 −1.854억달러(IBIT −1.435억, FBTC −0.419억, Farside 기준), 11/5~11/13 7거래일 누적 −19.07억달러</li>
+          <li><span class="tag t-media">언론</span>11/9~11/13 주간 순유출 −10.65억달러로 3주 연속 주간 유출이라는 보도 (Bloomingbit)</li>
+          <li><span class="tag t-media">언론</span>주말 청산 약 20억달러 중 BTC 7.74억달러 (Coinglass 인용)</li>
+          <li><span class="tag t-warn">확인 불가</span>11/16(월) ETF 순유출입은 작성 시점에 Farside 표가 비어 있어 확인 불가 · 같은 날 IBIT 주가는 36.79달러(−5.52%)로 마감했다는 보도가 있음</li>
+        </ul>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">해석 및 가격 영향 경로</button><div class="fold-body">
+        <p><span class="tag t-view">해석</span>○ 금요일까지 ETF 유출로 현물 매도가 이어진 상태에서 미국 시장이 닫힌 주말에 가격이 지지선을 하회하자 레버리지 롱 청산이 연쇄적으로 발생했고, 청산이 일단락된 뒤 저가 매수로 반등한 흐름으로 판단함</p>
+        <p><span class="tag t-view">해석</span>○ 주말 청산으로 레버리지 부담은 줄었을 가능성이 있으나, 월요일(11/16) 미국장에서 IBIT가 다시 5% 넘게 하락했다는 보도를 보면 현물 매도 압력은 아직 해소되지 않은 것으로 보임</p>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">상승 논거 / 하락 논거와 각각의 반론</button><div class="fold-body">
+        <div class="argue">
+          <div class="arg"><span class="hd up">▲ 상승 논거</span>
+            <p>약 20억달러 규모 청산으로 과도한 롱 레버리지가 정리됐고 장중 저점 이후 종가가 4% 넘게 반등했음</p>
+            <p class="counter"><b>반론</b>반등 이후 11/17 08:28 시세는 89,000,000원으로 기준가보다 다시 1% 낮아 반등 지속성이 확인되지 않았음</p>
+            <p>공포·탐욕 지수가 13(극도의 공포)까지 내려갔다는 보도가 있어 심리 위축이 극단적임</p>
+            <p class="counter"><b>반론</b>극단적 공포는 지난주(20)에도 반등 신호로 작동하지 않았고 추가 하락이 뒤따랐음</p>
+          </div>
+          <div class="arg"><span class="hd down">▼ 하락 논거</span>
+            <p>ETF 7거래일 연속 유출과 3주 연속 주간 유출로 기관성 수요 이탈이 이어지고 있음</p>
+            <p class="counter"><b>반론</b>11/13 유출액(−1.85억달러)은 11/11(−3.00억달러)보다 작아 하루 유출 규모는 줄어드는 모습임</p>
+            <p>12월 인상이 100% 반영되고 추가 인상까지 거론되는 등 금리 환경이 불리함</p>
+            <p class="counter"><b>반론</b>인상이 완전히 가격에 반영됐다면 12/9 결과 자체의 추가 충격은 제한될 수 있으며, 변수는 50bp 여부와 이후 경로임</p>
+          </div>
+        </div>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">다음에 확인할 지표·일정</button><div class="fold-body">
+        <ul class="pts">
+          <li>11/18(수) 07:00 KST 전후 엔비디아 3분기 실적 발표와 기술주 반응</li>
+          <li>11/16 이후 BTC 현물 ETF 일별 확정치 (8거래일 연속 유출 여부)</li>
+          <li>업비트 52주 저가 86,110,000원 재시험 여부와 8월 저가 88,342,000원 위 주봉 종가 유지 여부 (관찰 기준)</li>
+          <li>12/9 FOMC, 12/10 11월 CPI</li>
+        </ul>
+      </div></div>
+    </div>
+  </article>
+
+  <!-- ETH -->
+  <article class="coin-panel" data-coin="ETH">
+    <div class="coin-head"><h3><i style="background:var(--c-eth)"></i>이더리움 ETH</h3><span class="chg down num">▼ −13.37% <small>주간 하락 · 4종 중 최대</small></span></div>
+    <div class="coin-body">
+      <div class="fold"><button class="fold-btn" type="button">주요 가격 변동과 배경</button><div class="fold-body">
+        <ul class="pts">
+          <li><span class="tag t-fact">사실</span>2,916,000원 → 2,526,000원(−13.37%), 기간 고가 2,947,000원 · 저가 2,375,000원(11/15 일봉)으로 4종 중 주간 낙폭이 가장 컸음</li>
+          <li><span class="tag t-fact">사실</span>11/14 일봉 −6.92% 이후 11/15 일봉 +3.14% 반등 · 6월 저가 2,300,000원(52주 저가)은 하회하지 않았음</li>
+          <li><span class="tag t-fact">사실</span>업비트 원화 기준 ETH/BTC 비율은 이번 주 약 1.3% 하락해 상대 약세가 이어졌음 (2,526,000 ÷ 89,949,000 vs 2,916,000 ÷ 102,460,000)</li>
+          <li><span class="tag t-media">언론</span>달러 기준 11/16 1,800달러 부근에서 거래됐다는 보도가 있음 (FXStreet, 11/16)</li>
+        </ul>
+      </div></div>
+      <div class="fold"><button class="fold-btn" type="button">규제·거래소 공지·생태계 발표</button><div class="fold-body">
+        <ul class="pts">
+          <li>기간 내 이더리움 재단·핵심 개발자의 공식 업그레이드 일정 발표나 업비트 ETH 입출금 중단 공지는 확인되지 않았음</li>
+        </ul>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">확인된 사실</button><div class="fold-body">
+        <ul class="pts">
+          <li><span class="tag t-media">언론</span>미국 ETH 현물 ETF는 지난주(11/9~11/13) 누적 −3.99억달러 순유출 (FXStreet)</li>
+          <li><span class="tag t-media">언론</span>주말 청산 약 20억달러 중 ETH 4.88억달러 (Coinglass 인용)</li>
+        </ul>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">해석 및 가격 영향 경로</button><div class="fold-body">
+        <p><span class="tag t-view">해석</span>○ ETF 유출과 ETH/BTC 약세가 2주 연속 겹쳐 ETH가 위험회피 국면에서 BTC보다 먼저, 더 크게 매도되는 구조가 유지되고 있음 · 다만 6월 저가는 지켜 BTC·XRP·DOGE와 달리 52주 저가를 새로 쓰지 않은 점은 구분해 볼 필요가 있음</p>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">상승 논거 / 하락 논거와 각각의 반론</button><div class="fold-body">
+        <div class="argue">
+          <div class="arg"><span class="hd up">▲ 상승 논거</span>
+            <p>4종 중 유일하게 52주 저가(6월 2,300,000원)를 지켰음</p>
+            <p class="counter"><b>반론</b>6월 저가와 거리가 3% 남짓(기간 저가 기준)에 불과해 지지 여부를 아직 판단하기 이름</p>
+          </div>
+          <div class="arg"><span class="hd down">▼ 하락 논거</span>
+            <p>ETF 주간 유출과 ETH/BTC 약세가 이어지며 상대·절대 수급 모두 약함</p>
+            <p class="counter"><b>반론</b>11/15 반등률(+3.14%)은 BTC(+1.23%)보다 커 저가 매수가 들어올 때는 탄력이 큰 편임</p>
+          </div>
+        </div>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">다음에 확인할 지표·일정</button><div class="fold-body">
+        <ul class="pts">
+          <li>ETH 현물 ETF 일별 순유출입 (주간 유출 지속 여부)</li>
+          <li>업비트 6월 저가 2,300,000원과 기간 저가 2,375,000원 지지 여부 (관찰 기준)</li>
+          <li>ETH/BTC 비율 추가 하락 여부</li>
+        </ul>
+      </div></div>
+    </div>
+  </article>
+
+  <!-- XRP -->
+  <article class="coin-panel" data-coin="XRP">
+    <div class="coin-head"><h3><i style="background:var(--c-xrp)"></i>리플 XRP</h3><span class="chg down num">▼ −12.12% <small>주간 하락</small></span></div>
+    <div class="coin-body">
+      <div class="fold"><button class="fold-btn" type="button">주요 가격 변동과 배경</button><div class="fold-body">
+        <ul class="pts">
+          <li><span class="tag t-fact">사실</span>1,526원 → 1,341원(−12.12%), 기간 고가 1,540원 · 저가 1,239원(11/14 일봉, 52주 저가)</li>
+          <li><span class="tag t-fact">사실</span>11/14 일봉 −8.19%로 급락한 뒤 11/15 일봉 +5.92%로 4종 중 가장 크게 반등했고, 기간 저가 대비 종가 반등폭은 +8.23%임</li>
+          <li><span class="tag t-media">언론</span>달러 기준 11/15 0.89달러까지 내려가 2024년 11월 이후 최저를 기록했다는 보도가 있음 (CoinDesk, 11/15)</li>
+        </ul>
+      </div></div>
+      <div class="fold"><button class="fold-btn" type="button">규제·거래소 공지·생태계 발표</button><div class="fold-body">
+        <ul class="pts">
+          <li>기간 내 리플사의 가격 관련 신규 공식 발표나 업비트 XRP 입출금 중단 공지는 확인되지 않았음</li>
+          <li><span class="tag t-media">언론</span>XRPL 테스트넷·데브넷 초기화(11/25)는 지난 회차와 같은 일정이며 메인넷과 무관함</li>
+        </ul>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">확인된 사실</button><div class="fold-body">
+        <ul class="pts">
+          <li><span class="tag t-media">언론</span>11/16 XRP 선물 미결제약정 2.587억달러(24시간 −6.28%), 펀딩비 음(−), 롱 계정 비중 73.3% (TokenPost 집계)</li>
+          <li><span class="tag t-warn">확인 불가</span>이번 주 XRP 현물 ETF 일별 순유입 수치는 확인하지 못했음</li>
+        </ul>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">해석 및 가격 영향 경로</button><div class="fold-body">
+        <p><span class="tag t-view">해석</span>○ 미결제약정 감소와 음(−) 펀딩비는 레버리지 롱이 정리되고 하락 베팅이 늘어난 상태를 뜻하므로, 가격이 반등하면 숏 포지션 정리가 반등을 키울 수 있으나 반대로 신규 수요 없이 레버리지 정리만으로 나온 반등일 수도 있음</p>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">상승 논거 / 하락 논거와 각각의 반론</button><div class="fold-body">
+        <div class="argue">
+          <div class="arg"><span class="hd up">▲ 상승 논거</span>
+            <p>저가 대비 반등폭(+8.2%)이 4종 중 가장 크고 일봉 MACD 히스토그램 음(−) 폭이 4종 중 유일하게 축소됐음</p>
+            <p class="counter"><b>반론</b>11/17 08:28 시세 1,304원으로 기준가 대비 −2.8% 되밀려 반등분의 상당 부분을 반납했음</p>
+          </div>
+          <div class="arg"><span class="hd down">▼ 하락 논거</span>
+            <p>달러 기준 2024년 11월 이후 최저, 6주 연속 주간 하락으로 장기 지지 구간이 확인되지 않음</p>
+            <p class="counter"><b>반론</b>음(−) 펀딩비 상태에서는 하락 베팅이 이미 쌓여 있어 추가 하락 시 속도가 둔화될 수 있음</p>
+          </div>
+        </div>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">다음에 확인할 지표·일정</button><div class="fold-body">
+        <ul class="pts">
+          <li>업비트 52주 저가 1,239원 재시험 여부 (관찰 기준)</li>
+          <li>XRP 미결제약정·펀딩비 방향 (같은 집계처 기준)</li>
+          <li>XRP 현물 ETF 일별 순유입 (미보고와 0 구분)</li>
+        </ul>
+      </div></div>
+    </div>
+  </article>
+
+  <!-- DOGE -->
+  <article class="coin-panel" data-coin="DOGE">
+    <div class="coin-head"><h3><i style="background:var(--c-doge)"></i>도지코인 DOGE</h3><span class="chg down num">▼ −12.80% <small>주간 하락</small></span></div>
+    <div class="coin-body">
+      <div class="fold"><button class="fold-btn" type="button">주요 가격 변동과 배경</button><div class="fold-body">
+        <ul class="pts">
+          <li><span class="tag t-fact">사실</span>94.5원 → 82.4원(−12.80%), 기간 고가 96.2원 · 저가 77.0원(11/15 일봉, 52주 저가)</li>
+          <li><span class="tag t-fact">사실</span>11/14 일봉 −9.88%로 4종 중 하루 낙폭이 가장 컸고 후반(11/13→11/16) 낙폭도 −8.34%로 가장 컸음 · 주봉 7주 연속 하락</li>
+          <li><span class="tag t-media">언론</span>달러 기준 11/16 약 0.059달러, 선물 미결제약정 1.354억달러(−2.72%)로 집계됐음 (TokenPost)</li>
+        </ul>
+      </div></div>
+      <div class="fold"><button class="fold-btn" type="button">규제·거래소 공지·생태계 발표</button><div class="fold-body">
+        <ul class="pts">
+          <li><span class="tag t-warn">확인 불가</span>도지코인 재단의 House of Doge 독점 계약 종료, Dogecoin Labs 개발자 계정 관리 이전 관련 헤드라인이 있으나 발표일과 원문을 확인하지 못해 신규 사건으로 취급하지 않음</li>
+          <li>DogeOS 메인넷 출시일 공식 발표는 이번 기간에도 확인되지 않았음</li>
+        </ul>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">확인된 사실</button><div class="fold-body">
+        <ul class="pts">
+          <li><span class="tag t-fact">사실</span>업비트 DOGE 거래대금은 11/14 일봉 333억원으로 직전 20일 평균(136억원)의 2.4배였으나 4종 중 절대 규모는 가장 작음</li>
+          <li><span class="tag t-warn">확인 불가</span>이번 주 DOGE 현물 ETF 순유입 수치는 확인하지 못했음</li>
+        </ul>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">해석 및 가격 영향 경로</button><div class="fold-body">
+        <p><span class="tag t-view">해석</span>○ 거래 규모가 작은 자산이어서 주말처럼 유동성이 얇은 시간에 하락 폭이 가장 크게 나타났고, 반등폭(+3.78%)은 XRP·ETH보다 작아 매수 복귀가 상대적으로 약한 것으로 판단함</p>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">상승 논거 / 하락 논거와 각각의 반론</button><div class="fold-body">
+        <div class="argue">
+          <div class="arg"><span class="hd up">▲ 상승 논거</span>
+            <p>단기 낙폭이 커 위험선호가 돌아올 때 되돌림 폭이 클 수 있음</p>
+            <p class="counter"><b>반론</b>ETF 유입 0 지속과 생태계 일정 부재로 되돌림을 이끌 수요 주체가 보이지 않음</p>
+          </div>
+          <div class="arg"><span class="hd down">▼ 하락 논거</span>
+            <p>200주 이평 대비 −58%, 52주 고점 대비 −66%로 4종 중 장기 추세가 가장 약함</p>
+            <p class="counter"><b>반론</b>이미 큰 폭으로 하락해 추가 하락 여력에 대한 판단은 주봉 저가 형성 여부를 더 지켜봐야 함</p>
+          </div>
+        </div>
+      </div></div>
+      <div class="fold collapsed"><button class="fold-btn" type="button">다음에 확인할 지표·일정</button><div class="fold-body">
+        <ul class="pts">
+          <li>업비트 52주 저가 77.0원 재시험 여부 (관찰 기준)</li>
+          <li>도지코인 재단·House of Doge 관련 공식 발표 원문과 날짜</li>
+        </ul>
+      </div></div>
+    </div>
+  </article>
+</section>
+
+<!-- ④ 공통 시장 요인 -->
+<section class="block" id="sec-common">
+  <div class="sec-head"><span class="no">④ 공통 시장 요인</span><h2>ETF 자금흐름 · 거시 · 레버리지 · 환율 · 업비트 공지</h2></div>
+
+  <h3>ETF 자금흐름 (단위: 백만 달러, 미 동부시간 기준일)</h3>
+  <div class="tbl-wrap">
+    <table class="num">
+      <thead><tr><th>기준일</th><th>상품군 (포함 펀드)</th><th class="r">순유출입</th><th>집계 기준</th><th>출처</th></tr></thead>
+      <tbody>
+        <tr><td>11/13</td><td>미국 BTC 현물 ETF 전체 (IBIT −143.5, FBTC −41.9)</td><td class="r"><span class="down">−185.4</span></td><td>Farside</td><td><a href="https://blockchain.news/flashnews/bitcoin-etfs-185-4m-net-outflow-nov-13" target="_blank" rel="noopener">Blockchain.News</a></td></tr>
+        <tr><td>11/5~11/13 (7거래일)</td><td>미국 BTC 현물 ETF 전체 (IBIT −1,416.4)</td><td class="r"><span class="down">−1,907.4</span></td><td>Farside</td><td><a href="https://stablecoininsider.org/bitcoin-etf-outflows-seven-days/" target="_blank" rel="noopener">Stablecoin Insider</a></td></tr>
+        <tr><td>11/9~11/13 (주간)</td><td>미국 BTC 현물 ETF 전체</td><td class="r"><span class="down">−1,065</span></td><td>보도 인용</td><td><a href="https://en.bloomingbit.io/feed/news/124515" target="_blank" rel="noopener">Bloomingbit</a></td></tr>
+        <tr><td>11/9~11/13 (주간)</td><td>미국 ETH 현물 ETF 전체</td><td class="r"><span class="down">−399</span></td><td>보도 인용</td><td><a href="https://fxstreet.com/cryptocurrencies/news/crypto-today-bitcoin-ethereum-xrp-face-increasing-selling-pressure-etf-outflows-202611161030" target="_blank" rel="noopener">FXStreet</a></td></tr>
+        <tr><td>11/16</td><td>미국 BTC 현물 ETF</td><td class="r"><span class="na">확인 불가</span></td><td>—</td><td>작성 시점 미보고</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout">
+    <p><b>출처 충돌</b> · 11/13 BTC 현물 ETF 순유출은 Farside 기준 −1.854억달러가 가장 많이 인용됐으나 다른 집계에서는 −0.419억달러(12개 펀드)와 −1.925억달러도 보도됐음 → 집계 시점·범위 차이로 보이며 합산·평균하지 않음</p>
+    <p>※ 지난 회차에서 충돌했던 11/12 수치(SoSoValue −2.84억 vs Farside 잠정 −0.477억)는 확정치를 개별적으로 확인하지 못했음 · 7거래일 누적 −19.07억달러는 Farside 확정 기준 합계로 보도된 값임</p>
+  </div>
+
+  <h3>거시경제·기술주</h3>
+  <div class="news">
+    <div class="news-item"><p class="what"><span class="tag t-media">언론</span>CME FedWatch 기준 12월 금리인상 확률이 100%로 반영됐다는 보도</p>
+      <div class="src"><span>발표 2026-11-16 · 발생 11/16 기준 시장 가격</span><a href="https://www.fool.com/investing/2026/11/16/theres-now-100-chance-fed-rate-hike-in-december-thats-not-worst-news-for-wall-street/" target="_blank" rel="noopener">Motley Fool</a></div></div>
+    <div class="news-item"><p class="what"><span class="tag t-media">언론</span>월러 연준 이사는 12월 25bp 인상을 지지하면서 50bp도 검토 가능하다고 밝혔고, 로건 댈러스 연은 총재는 최소 두 차례 추가 인상을 지지했다는 보도</p>
+      <div class="src"><span>발표 월러 11/10 · 로건 발언일 확인 불가</span><a href="https://www.cnbc.com/2026/11/10/fed-governor-waller-sees-december-hike-likely.html" target="_blank" rel="noopener">CNBC</a><a href="https://finance.yahoo.com/economy/policy/articles/fed-officials-open-door-half-164918823.html" target="_blank" rel="noopener">Yahoo Finance</a></div></div>
+    <div class="news-item"><p class="what"><span class="tag t-media">언론</span>11/16 서울 외환시장에서 원/달러는 1,335.7원(−1.0원)으로 마감했고, 미국 CPI 상회로 달러인덱스가 1년 7개월여 만의 최고 수준이라는 보도</p>
+      <div class="src"><span>발표 2026-11-16 · 발생 11/16 15:30</span><a href="https://betanews.net/article/view/beta202611160124" target="_blank" rel="noopener">베타뉴스</a><a href="https://www.tokenpost.kr/news/insights/438987" target="_blank" rel="noopener">토큰포스트</a></div></div>
+    <div class="news-item"><p class="what"><span class="tag t-fact">사실</span>엔비디아 3분기(FY2027) 실적 발표·컨퍼런스콜 11/17 14:00 PT 예정 (KST 11/18 07:00) · 지난 회차 SEC 8-K 공시 기준</p>
+      <div class="src"><span>공시 2026-11-12 · 발생 예정 11/17 (미국시간)</span><a href="https://www.sec.gov/Archives/edgar/data/0001045810/000104581026000082/nvidiaannouncesceotransiti.htm" target="_blank" rel="noopener">SEC 8-K 공시</a></div></div>
+    <div class="news-item"><p class="what"><span class="tag t-media">언론</span>BTC 급락이 이어진 11/14~15 기사들은 원인으로 금리인상 베팅, ETF 유출, 레버리지 청산을 공통으로 꼽았음</p>
+      <div class="src"><span>발표 2026-11-14~15 · 발생 11/14~15</span><a href="https://cryptoticker.io/en/crypto-news-bitcoin-falls-to-63500-fed-hike-bets-november-14-2026/" target="_blank" rel="noopener">CryptoTicker</a><a href="https://www.cryptotimes.io/2026/11/15/why-is-bitcoin-price-going-down-will-btc-crash-to-60000/" target="_blank" rel="noopener">The Crypto Times</a></div></div>
+  </div>
+
+  <h3>레버리지 청산 (24시간 집계, 단위: 억 달러)</h3>
+  <div class="tbl-wrap">
+    <table class="num">
+      <thead><tr><th>집계 시점</th><th class="r">전체 청산</th><th>구성</th><th>집계 기준</th><th>출처</th></tr></thead>
+      <tbody>
+        <tr><td>11/15 아시아 오전까지 24시간</td><td class="r">약 20</td><td>BTC 7.74, ETH 4.88, 대부분 롱</td><td>Coinglass 인용</td><td><a href="https://decrypt.co/383366/bitcoin-2-billion-liquidation-weekend-traders-watching-60000" target="_blank" rel="noopener">Decrypt</a></td></tr>
+        <tr><td>11/15 11:00 ET까지 24시간</td><td class="r">17.1</td><td>롱 80.2%</td><td>보도 인용</td><td><a href="https://en.bloomingbit.io/feed/news/124486" target="_blank" rel="noopener">Bloomingbit</a></td></tr>
+        <tr><td>11/14 (토) 24시간</td><td class="r">19</td><td>롱 중심</td><td>보도 인용</td><td><a href="https://decrypt.co/383366/bitcoin-2-billion-liquidation-weekend-traders-watching-60000" target="_blank" rel="noopener">Decrypt</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">※ 세 수치는 집계 구간이 서로 겹치므로 합산하지 않음 · 지난주 11/12~13 청산(약 12~16억달러)과도 구간이 달라 직접 비교하지 않음</p>
+
+  <h3>원/달러 환율과 국내외 가격차</h3>
+  <div class="tbl-wrap">
+    <table class="num">
+      <thead><tr><th>항목</th><th class="r">값</th><th>기준 시각</th><th>출처·비고</th></tr></thead>
+      <tbody>
+        <tr><td>원/달러 환율 (서울 외환시장 주간 종가)</td><td class="r">1,335.7원 (−1.0원)</td><td>11/16(월) 15:30 KST</td><td><a href="https://betanews.net/article/view/beta202611160124" target="_blank" rel="noopener">베타뉴스</a> · <a href="http://www.mediadale.com/news/articleView.html?idxno=296573" target="_blank" rel="noopener">미디어데일</a> · 장중 저점 1,332.9원</td></tr>
+        <tr><td>업비트 USDT/KRW (1시간봉 종가)</td><td class="r">1,366원</td><td>11/16 15:00~16:00 KST</td><td>업비트 API</td></tr>
+        <tr><td>USDT 가격차 (대리지표)</td><td class="r"><span class="up">+2.27%</span></td><td>11/16 오후, 약 30분 시차</td><td>1,366 ÷ 1,335.7 − 1 · 지난 회차(11/13) +1.52% · <span class="tag t-view">해석</span>BTC 김치프리미엄 자체가 아님</td></tr>
+        <tr><td>업비트 USDT/KRW 주말 고가</td><td class="r">1,393원</td><td>11/14 일봉 (토~일 09:00)</td><td>업비트 API · 서울 외환시장 휴장 중이라 같은 시각 환율 없음</td></tr>
+        <tr><td>업비트 USDT/KRW 주간 변화</td><td class="r">1,370원 → 1,376원 (+0.44%)</td><td>11/9 09:00 → 11/16 09:00</td><td>업비트 API 일봉 종가</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <p>○ 원/달러 환율 보도 중 1,347.1원(−9.5원) 마감이라는 수치도 있었으나 다른 3개 매체와 달라 사용하지 않음 · 해외 거래소 동일 시각 가격을 확보하지 못해 코인별 김치프리미엄은 자체 산출하지 않음</p>
+    <p><span class="tag t-view">해석</span>○ 원/달러가 거의 변하지 않은 상태에서 USDT 가격차가 +1.5%에서 +2.3%로 커졌고 주말 급락 때 USDT/KRW가 1,393원까지 올랐으므로, 급락 구간에 국내 원화 매수 수요가 해외보다 강했거나 국내 가격이 해외보다 덜 빠졌을 가능성이 있음 · 국내 프리미엄이 높은 상태에서는 프리미엄이 줄어들 때 원화 가격이 해외보다 더 빠질 수 있다는 점도 함께 고려해야 함</p>
+  </div>
+
+  <h3>업비트 입출금·점검·거래지원 공지</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>대상</th><th>내용</th><th>일정</th><th>공지일</th><th>상태</th><th>출처</th></tr></thead>
+      <tbody>
+        <tr><td>BTC·ETH·XRP·DOGE</td><td>입출금 중단·유의종목 지정 공지</td><td>—</td><td>—</td><td>검색 범위 내 발견되지 않음</td><td>업비트 공지 원문 직접 조회 불가</td></tr>
+        <tr><td>카바(KAVA)</td><td>보안사고 가능성 사유 거래 유의 종목 지정, 입출금 중단 중</td><td>입출금 중단 11/14~, 유의 지정 12월 3주차까지</td><td>11/16</td><td><span class="tag t-media">언론</span></td><td><a href="https://www.digitaltoday.co.kr/disclosure/articleView.html?idxno=715773" target="_blank" rel="noopener">디지털투데이</a> · <a href="https://www.coinreaders.com/270274" target="_blank" rel="noopener">코인리더스</a></td></tr>
+        <tr><td>소폰(SOPH) · 질리카(ZIL)</td><td>거래지원 종료</td><td>11/16 15:00</td><td><span class="na">확인 불가</span></td><td><span class="tag t-media">언론</span></td><td><a href="https://www.gukjenews.com/news/articleView.html?idxno=3752422" target="_blank" rel="noopener">국제뉴스</a></td></tr>
+        <tr><td>웨이브(WAVES)</td><td>보안사고 우려 유의 종목 지정, 입금 일시 중단</td><td>12월 2주차까지 검토</td><td><span class="na">확인 불가</span></td><td><span class="tag t-media">언론</span></td><td><a href="https://www.digitaltoday.co.kr/disclosure/articleView.html?idxno=714421" target="_blank" rel="noopener">디지털투데이</a></td></tr>
+        <tr><td>코박토큰(CBK)</td><td>토큰 스왑에 따른 입출금 일시 중단</td><td>11/17 11:00~</td><td><span class="na">확인 불가</span></td><td><span class="tag t-media">언론</span> 지난 회차와 동일</td><td><a href="https://economybloc.com/article/122663/" target="_blank" rel="noopener">이코노미블록</a></td></tr>
+        <tr><td>만트라(MANTRA)</td><td>거래지원 종료</td><td>12/14 15:00 예정</td><td>11/13 (단일 보도)</td><td><span class="tag t-warn">교차확인 실패</span></td><td><a href="https://economybloc.com/article/122662/" target="_blank" rel="noopener">이코노미블록</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">※ 거래 전 반드시 <a href="https://upbit.com/service_center/notice" target="_blank" rel="noopener">업비트 공지사항</a>에서 원문 확인 필요</p>
+</section>
+
+<!-- ⑤ 기간별 전망 -->
+<section class="block" id="sec-outlook">
+  <div class="sec-head"><span class="no">⑤ 기간별 전망 (차트·수급)</span><h2>단기 1일 · 중기 7일 · 장기 1개월+</h2>
+    <p>업비트 원자료로 직접 계산한 기술적 지표와 확인된 수급 정보로 기간별 신호를 정리함 · 목표가와 매수·매도 권유는 제시하지 않으며, 표의 가격은 이동평균·밴드·기간 고저가 같은 관찰 기준임</p></div>
+
+  <div class="callout">
+    <p><b>읽는 법</b> · 지표 값은 <span class="tag t-fact">사실</span>(업비트 캔들로 계산한 결과)이고 ‘신호 판단’과 시나리오는 <span class="tag t-view">해석</span>임 · 기술적 지표는 후행 지표이고 적중률을 백테스트하지 않았으므로 확률을 제시하지 않음 · 단기 표는 발행 직전(11/17 08시대) 최신 시간봉 기준이며 진행 중인 봉을 포함함</p>
+  </div>
+
+  <h3>지난 회차(11/14) 시나리오 점검</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>기간</th><th>지난 회차 시나리오</th><th>결과</th><th>근거 (업비트 원화 기준)</th></tr></thead>
+      <tbody>
+        <tr><td>단기</td><td>저점 이탈: BTC 기간 저가(92,500,000원) 종가 하회 + DOGE·XRP 52주 저가 경신 + 거래대금 증가</td><td><span class="sig down">성립</span></td><td>11/14 BTC 1시간봉이 92,500,000원 아래에서 마감, 11/14~15 일봉에서 XRP 1,239원·DOGE 77.0원으로 52주 저가 경신, 11/14 BTC 거래대금 2,382억원</td></tr>
+        <tr><td>단기</td><td>단기 반등: 92,500,000원 지지 + 1시간봉 60이평 회복</td><td><span class="sig mixed">불성립</span></td><td>무효화 조건(1시간봉 종가 기준 기간 저가 하회) 발생</td></tr>
+        <tr><td>중기</td><td>하락 추세 지속: ETF 유출 지속 + 4종 20일 저가 하회</td><td><span class="sig down">대부분 성립</span></td><td>ETF 7거래일 연속 유출, 4종 모두 20일 저가 하회 · 엔비디아 실적은 아직 발표 전</td></tr>
+        <tr><td>장기</td><td>바닥 다지기: 무효화 조건 = BTC 주봉 종가 8월 저가(88,342,000원) 하회</td><td><span class="sig mixed">유지 (장중만 하회)</span></td><td>장중 저가 86,110,000원으로 하회했으나 11/9 주봉 종가 89,949,000원은 8월 저가 위</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 단기 -->
+  <article class="hz">
+    <div class="hz-head"><span class="hz-chip">단기</span><div><h3>1일 이내 · 발행 시점(11/17 08:30) → 11/18(수) 08:30</h3><p class="small">근거: 1시간봉·4시간봉 지표(최신), 일봉 변동성, 호가 잔량, 엔비디아 실적 일정</p></div></div>
+    <div class="tbl-wrap"><table class="num"><thead><tr><th>지표</th><th class="r cc c-BTC">BTC</th><th class="r cc c-ETH">ETH</th><th class="r cc c-XRP">XRP</th><th class="r cc c-DOGE">DOGE</th></tr></thead><tbody><tr><td>1시간봉 RSI(14)<br><span class="small">11/17 08:00~09:00 봉까지</span></td><td class="r cc c-BTC"><b>51.6</b><br><span class="small">강세권(50~70)</span></td><td class="r cc c-ETH"><b>49.4</b><br><span class="small">약세권(30~50)</span></td><td class="r cc c-XRP"><b>46.4</b><br><span class="small">약세권(30~50)</span></td><td class="r cc c-DOGE"><b>46.4</b><br><span class="small">약세권(30~50)</span></td></tr><tr><td>4시간봉 RSI(14)<br><span class="small">11/17 05:00~09:00 봉까지</span></td><td class="r cc c-BTC"><b>35.2</b><br><span class="small">약세권(30~50)</span></td><td class="r cc c-ETH"><b>36.9</b><br><span class="small">약세권(30~50)</span></td><td class="r cc c-XRP"><b>38.8</b><br><span class="small">약세권(30~50)</span></td><td class="r cc c-DOGE"><b>36.8</b><br><span class="small">약세권(30~50)</span></td></tr><tr><td>1시간봉 60이평 대비<br><span class="small">최신 1시간봉 종가 기준</span></td><td class="r cc c-BTC"><span class="down">−0.3%</span><br><span class="small">하회 · 89,227,067</span></td><td class="r cc c-ETH"><span class="down">−0.3%</span><br><span class="small">하회 · 2,495,600</span></td><td class="r cc c-XRP"><span class="down">−0.7%</span><br><span class="small">하회 · 1,313</span></td><td class="r cc c-DOGE"><span class="down">−0.8%</span><br><span class="small">하회 · 81.0</span></td></tr><tr><td>최근 24시간 고가 / 저가<br><span class="small">11/16 09:00~11/17 09:00</span></td><td class="r cc c-BTC"><b>89,991,000 / 87,364,000</b></td><td class="r cc c-ETH"><b>2,548,000 / 2,443,000</b></td><td class="r cc c-XRP"><b>1,342 / 1,288</b></td><td class="r cc c-DOGE"><b>82.4 / 79.3</b></td></tr><tr><td>일봉 ATR(14) ÷ 종가<br><span class="small">하루 평균 진폭</span></td><td class="r cc c-BTC"><b>3.5%</b><br><span class=small>목표가 아님, 변동성 참고</span></td><td class="r cc c-ETH"><b>5.1%</b><br><span class=small>목표가 아님, 변동성 참고</span></td><td class="r cc c-XRP"><b>5.6%</b><br><span class=small>목표가 아님, 변동성 참고</span></td><td class="r cc c-DOGE"><b>6.3%</b><br><span class=small>목표가 아님, 변동성 참고</span></td></tr></tbody></table></div>
+    <div class="hz-grid">
+      <div class="prose">
+        <h4>수급·일정 점검</h4>
+        <p><span class="tag t-fact">사실</span>○ 11/17 08:28 KST 시세는 BTC 89,000,000원, ETH 2,490,000원, XRP 1,304원, DOGE 80.4원으로 11/16 09:00 기준가보다 1.1~2.8% 낮음 (수익률 계산에는 쓰지 않음)</p>
+        <p><span class="tag t-fact">사실</span>○ 같은 시각 호가 30단계 매수잔량 ÷ 매도잔량은 BTC 0.24배, ETH 1.15배, XRP 2.03배, DOGE 0.83배였음</p>
+        <p><span class="tag t-fact">사실</span>○ 이 구간 안에 엔비디아 3분기 실적 컨퍼런스콜(KST 11/18 07:00)이 있음</p>
+        <p class="small">※ 호가 잔량은 주문 취소가 자유로워 순간 스냅샷의 신뢰도가 낮으므로 보조 참고로만 사용함</p>
+      </div>
+      <div class="prose">
+        <h4>신호 판단 <span class="tag t-view">해석</span></h4>
+        <ul class="sig-list">
+          <li><span class="sig mixed">혼조</span><b>BTC</b> 1시간봉 RSI 51.6으로 단기 과매도는 해소됐으나 4시간봉 RSI 35.2로 약세권이고, 매도 잔량 우위(0.24배)와 기준가 하회가 겹쳐 반등 탄력이 약해진 상태임</li>
+          <li><span class="sig mixed">혼조</span><b>ETH</b> 1시간봉 RSI 49.4, 1시간봉 60이평 부근에서 등락해 방향성이 뚜렷하지 않음</li>
+          <li><span class="sig mixed">혼조</span><b>XRP</b> 매수 잔량 우위(2.03배)이나 11/15 반등분 일부를 반납하며 1시간봉 60이평 아래로 내려왔음</li>
+          <li><span class="sig mixed">혼조</span><b>DOGE</b> 1시간봉 RSI 46.4, 24시간 고저 범위(79.3~82.4원) 하단 쪽에 있음</li>
+        </ul>
+        <p>○ 엔비디아 실적이 KST 기준 이 구간 마지막에 나오므로 발표 전까지는 관망성 등락, 발표 직후에는 기술주 반응을 따라 변동성이 커질 수 있는 구간으로 판단함</p>
+      </div>
+    </div>
+    <div class="scen">
+      <div class="sc"><h4>단기 반등 재개</h4><dl>
+        <dt>성립 조건</dt><dd>BTC 1시간봉 종가가 최근 24시간 고가(89,991,000원)를 넘어서고 엔비디아 실적 후 기술주가 안정</dd>
+        <dt>무효화 조건</dt><dd>1시간봉 종가 기준 최근 24시간 저가(87,364,000원) 하회</dd></dl></div>
+      <div class="sc"><h4>52주 저가 재시험</h4><dl>
+        <dt>성립 조건</dt><dd>BTC가 24시간 저가를 하회한 뒤 86,110,000원 방향으로 밀리고, XRP·DOGE도 24시간 저가를 동시에 하회</dd>
+        <dt>무효화 조건</dt><dd>하회 직후 같은 날 안에 24시간 저가 위로 복귀</dd></dl></div>
+    </div>
+  </article>
+
+  <!-- 중기 -->
+  <article class="hz">
+    <div class="hz-head"><span class="hz-chip">중기</span><div><h3>7일 이내 · 11/23(월) 09:00까지</h3><p class="small">근거: 일봉 RSI·볼린저밴드·MACD·이동평균(11/15 일봉까지), 거래대금, ETF 흐름, 주중 일정</p></div></div>
+    <div class="tbl-wrap"><table class="num"><thead><tr><th>지표</th><th class="r cc c-BTC">BTC</th><th class="r cc c-ETH">ETH</th><th class="r cc c-XRP">XRP</th><th class="r cc c-DOGE">DOGE</th></tr></thead><tbody><tr><td>일봉 RSI(14)<br><span class="small">11/13 일봉까지</span></td><td class="r cc c-BTC"><b>22.4</b><br><span class="small">과매도(30↓)</span></td><td class="r cc c-ETH"><b>25.7</b><br><span class="small">과매도(30↓)</span></td><td class="r cc c-XRP"><b>26.8</b><br><span class="small">과매도(30↓)</span></td><td class="r cc c-DOGE"><b>25.1</b><br><span class="small">과매도(30↓)</span></td></tr><tr><td>볼린저밴드 %B (20, 2σ)<br><span class="small">0 미만 = 하단 밴드 아래</span></td><td class="r cc c-BTC"><b>−0.04</b><br><span class=small>하단 이탈</span></td><td class="r cc c-ETH"><b>+0.02</b><br><span class=small>하단 부근</span></td><td class="r cc c-XRP"><b>+0.11</b><br><span class=small>하단 부근</span></td><td class="r cc c-DOGE"><b>+0.01</b><br><span class=small>하단 부근</span></td></tr><tr><td>MACD 히스토그램 (12,26,9)<br><span class="small">전일 대비</span></td><td class="r cc c-BTC"><b>음(−)</b><br><span class=small>음(−) 확대</span></td><td class="r cc c-ETH"><b>음(−)</b><br><span class=small>음(−) 확대</span></td><td class="r cc c-XRP"><b>음(−)</b><br><span class=small>음(−) 축소</span></td><td class="r cc c-DOGE"><b>음(−)</b><br><span class=small>음(−) 확대</span></td></tr><tr><td>5일 이평 대비<br><span class="small">단기 추세</span></td><td class="r cc c-BTC"><span class="down">−4.1%</span><br><span class="small">하회 · 93,792,200</span></td><td class="r cc c-ETH"><span class="down">−3.8%</span><br><span class="small">하회 · 2,625,200</span></td><td class="r cc c-XRP"><span class="down">−1.7%</span><br><span class="small">하회 · 1,364</span></td><td class="r cc c-DOGE"><span class="down">−4.5%</span><br><span class="small">하회 · 86.3</span></td></tr><tr><td>20일 이평 대비<br><span class="small">약 1개월 추세</span></td><td class="r cc c-BTC"><span class="down">−11.6%</span><br><span class="small">하회 · 101,807,650</span></td><td class="r cc c-ETH"><span class="down">−13.9%</span><br><span class="small">하회 · 2,934,500</span></td><td class="r cc c-XRP"><span class="down">−15.0%</span><br><span class="small">하회 · 1,577</span></td><td class="r cc c-DOGE"><span class="down">−14.8%</span><br><span class="small">하회 · 96.7</span></td></tr><tr><td>20일 고가 / 저가<br><span class="small">최근 20개 일봉</span></td><td class="r cc c-BTC"><b>110,000,000 / 86,110,000</b></td><td class="r cc c-ETH"><b>3,292,000 / 2,375,000</b></td><td class="r cc c-XRP"><b>1,800 / 1,239</b></td><td class="r cc c-DOGE"><b>109 / 77.0</b></td></tr><tr><td>11/13 거래대금 ÷ 직전 20일 평균<br><span class="small">업비트 KRW 마켓</span></td><td class="r cc c-BTC"><b>2.21배</b><br><span class=small>급증</span></td><td class="r cc c-ETH"><b>1.66배</b><br><span class=small>증가</span></td><td class="r cc c-XRP"><b>1.88배</b><br><span class=small>증가</span></td><td class="r cc c-DOGE"><b>1.64배</b><br><span class=small>증가</span></td></tr><tr><td>연속 하락 마감 일수<br><span class="small">일봉 종가 기준</span></td><td class="r cc c-BTC"><b>0일</b></td><td class="r cc c-ETH"><b>0일</b></td><td class="r cc c-XRP"><b>0일</b></td><td class="r cc c-DOGE"><b>0일</b></td></tr></tbody></table></div>
+    <div class="hz-grid">
+      <div class="prose">
+        <h4>수급·일정 점검</h4>
+        <p><span class="tag t-media">언론</span>○ BTC 현물 ETF 7거래일 연속 유출(누적 −19.07억달러), ETH 현물 ETF 주간 −3.99억달러 (④ 표 참고)</p>
+        <p><span class="tag t-fact">사실</span>○ 업비트 BTC 최근 7일 평균 거래대금은 직전 30일 평균의 2.1배로, 하락 구간에서 거래가 크게 늘었음</p>
+        <p><span class="tag t-media">언론</span>○ XRP는 미결제약정 감소와 음(−) 펀딩비가 보도됐음 · BTC 선물 미결제약정·펀딩비는 확인 불가</p>
+        <p><span class="tag t-fact">사실</span>○ 주중 일정: 11/18(수) 07:00 KST 엔비디아 실적, 매 거래일 ETF 흐름 · 11/26(목) 미국 추수감사절 휴장은 이번 구간 이후임</p>
+      </div>
+      <div class="prose">
+        <h4>신호 판단 <span class="tag t-view">해석</span></h4>
+        <ul class="sig-list">
+          <li><span class="sig mixed">과매도 · 추세 약세</span><b>BTC</b> 일봉 RSI 22.4로 과매도이고 %B −0.04로 밴드 하단 아래이나 MACD 음(−) 폭이 계속 커지고 있어 하락 추세 신호가 우세함</li>
+          <li><span class="sig down">하방 우위</span><b>ETH</b> 20일선 대비 −13.9%, ETF 주간 유출과 ETH/BTC 약세가 이어져 수급 신호가 가장 약함</li>
+          <li><span class="sig mixed">과매도 · 모멘텀 개선 초기</span><b>XRP</b> 4종 중 유일하게 MACD 음(−) 폭이 축소됐고 %B 0.11로 밴드 안으로 복귀했으나 20일선 대비 −15.0%로 추세는 여전히 약함</li>
+          <li><span class="sig down">하방 우위</span><b>DOGE</b> 20일선 대비 −14.8%, MACD 음(−) 확대, 반등폭도 작아 하방 신호가 우세함</li>
+        </ul>
+        <p>○ 거래대금 급증과 함께 장중 저점을 찍고 반등한 모습은 매도 절정(투매) 이후 바닥을 다지는 과정일 수 있으나, 지난주에도 같은 해석이 가능했던 뒤 추가 하락이 나왔으므로 52주 저가를 일봉 종가로 지키는지 확인한 뒤 판단해야 함</p>
+      </div>
+    </div>
+    <div class="scen">
+      <div class="sc"><h4>기술적 되돌림</h4><dl>
+        <dt>성립 조건</dt><dd>BTC 일봉 종가가 볼린저 하단(약 9,088만원)과 5일선(약 9,379만원)을 회복하고, ETF 일별 흐름이 순유입으로 돌아섬</dd>
+        <dt>무효화 조건</dt><dd>일봉 종가 기준 52주 저가(86,110,000원) 하회</dd></dl></div>
+      <div class="sc"><h4>하락 추세 지속</h4><dl>
+        <dt>성립 조건</dt><dd>ETF 8거래일 이상 연속 유출, 엔비디아 실적 후 기술주 추가 약세, 4종이 52주 저가(ETH는 6월 저가)를 일봉 종가로 하회</dd>
+        <dt>무효화 조건</dt><dd>일봉 RSI가 30 위로 올라오고 MACD 히스토그램 음(−) 폭이 2일 연속 축소 (XRP는 1일째 축소)</dd></dl></div>
+    </div>
+  </article>
+
+  <!-- 장기 -->
+  <article class="hz">
+    <div class="hz-head"><span class="hz-chip">장기</span><div><h3>1개월 이상 · 12월 FOMC 이후까지</h3><p class="small">근거: 주봉 이동평균(20·50·200주), 주봉 RSI, 52주 고저가, 금리·제도 일정</p></div></div>
+    <div class="tbl-wrap"><table class="num"><thead><tr><th>지표</th><th class="r cc c-BTC">BTC</th><th class="r cc c-ETH">ETH</th><th class="r cc c-XRP">XRP</th><th class="r cc c-DOGE">DOGE</th></tr></thead><tbody><tr><td>200주 이평 대비<br><span class="small">약 4년 평균</span></td><td class="r cc c-BTC"><span class="down">−6.9%</span><br><span class="small">하회 · 96,615,105</span></td><td class="r cc c-ETH"><span class="down">−30.0%</span><br><span class="small">하회 · 3,610,692</span></td><td class="r cc c-XRP"><span class="down">−27.0%</span><br><span class="small">하회 · 1,837</span></td><td class="r cc c-DOGE"><span class="down">−57.8%</span><br><span class="small">하회 · 195.3</span></td></tr><tr><td>20주 / 50주 이평 배열<br><span class="small">중장기 추세</span></td><td class="r cc c-BTC"><b>20주 < 50주</b><br><span class=small>역배열(약세)</span></td><td class="r cc c-ETH"><b>20주 < 50주</b><br><span class=small>역배열(약세)</span></td><td class="r cc c-XRP"><b>20주 < 50주</b><br><span class=small>역배열(약세)</span></td><td class="r cc c-DOGE"><b>20주 < 50주</b><br><span class=small>역배열(약세)</span></td></tr><tr><td>50주 이평 대비<br><span class="small">약 1년 평균</span></td><td class="r cc c-BTC"><span class="down">−17.1%</span><br><span class="small">하회 · 108,556,140</span></td><td class="r cc c-ETH"><span class="down">−23.4%</span><br><span class="small">하회 · 3,295,820</span></td><td class="r cc c-XRP"><span class="down">−34.4%</span><br><span class="small">하회 · 2,045</span></td><td class="r cc c-DOGE"><span class="down">−40.3%</span><br><span class="small">하회 · 138</span></td></tr><tr><td>주봉 RSI(14)<br><span class="small">최근 주봉 기준</span></td><td class="r cc c-BTC"><b>36.1</b><br><span class="small">약세권(30~50)</span></td><td class="r cc c-ETH"><b>34.8</b><br><span class="small">약세권(30~50)</span></td><td class="r cc c-XRP"><b>34.0</b><br><span class="small">약세권(30~50)</span></td><td class="r cc c-DOGE"><b>33.0</b><br><span class="small">약세권(30~50)</span></td></tr><tr><td>52주 고점 대비<br><span class="small">주봉 고가 기준</span></td><td class="r cc c-BTC"><b>−37.12%</b><br><span class=small>고점 143,050,000</span></td><td class="r cc c-ETH"><b>−50.55%</b><br><span class=small>고점 5,108,000</span></td><td class="r cc c-XRP"><b>−61.63%</b><br><span class=small>고점 3,495</span></td><td class="r cc c-DOGE"><b>−66.50%</b><br><span class=small>고점 246</span></td></tr><tr><td>52주 저가 대비<br><span class="small">주봉 저가 기준</span></td><td class="r cc c-BTC"><b>+4.46%</b><br><span class=small>저가 86,110,000</span></td><td class="r cc c-ETH"><b>+9.83%</b><br><span class=small>저가 2,300,000</span></td><td class="r cc c-XRP"><b>+8.23%</b><br><span class=small>저가 1,239</span></td><td class="r cc c-DOGE"><b>+7.01%</b><br><span class=small>저가 77.0</span></td></tr></tbody></table></div>
+    <p class="small">※ 주봉은 월요일 09:00 KST 시작이며 마지막 주봉(11/9 주)은 11/16 09:00에 마감된 완성 봉임 · 52주 범위는 2025-11-24 주부터</p>
+    <div class="hz-grid">
+      <div class="prose">
+        <h4>거시·제도 점검</h4>
+        <p><span class="tag t-fact">사실</span>○ 12/9 FOMC 금리 결정, 12/10 11월 CPI 발표 예정 (BLS 일정)</p>
+        <p><span class="tag t-media">언론</span>○ 12월 인상 확률 100% 반영, 일부 연준 인사는 2회 이상 추가 인상 필요성 언급</p>
+        <p><span class="tag t-media">언론</span>○ 디지털자산기본법 정부안은 11월 공개 예정으로 보도됐으나 11/16까지 공개 확인되지 않았고, 정부안이 곧 법안 확정을 뜻하지는 않음 (MTN 11/9)</p>
+        <p><span class="tag t-fact">사실</span>○ 업비트 주봉 기준 BTC·ETH·XRP 6주, DOGE 7주 연속 하락 마감 · BTC·XRP·DOGE는 이번 주 52주 저가 경신, ETH는 6월 저가보다 9.8% 위</p>
+      </div>
+      <div class="prose">
+        <h4>신호 판단 <span class="tag t-view">해석</span></h4>
+        <ul class="sig-list">
+          <li><span class="sig mixed">약세 국면 · 분기점</span><b>BTC</b> 200주선 대비 −6.9%로 하회 폭이 커졌고 52주 저가를 새로 썼지만 주봉 종가는 8월 저가 위를 지켜, 이번 주 주봉 종가가 장기 방향의 분기점임</li>
+          <li><span class="sig down">하방 우위</span><b>ETH</b> 200주선 대비 −30.0%, 52주 고점 대비 −50.5%로 장기 추세가 약함</li>
+          <li><span class="sig down">하방 우위</span><b>XRP</b> 52주 고점 대비 −61.6%, 6주 연속 하락과 52주 신저가로 장기 지지 구간이 확인되지 않음</li>
+          <li><span class="sig down">하방 우위</span><b>DOGE</b> 200주선 대비 −57.8%, 7주 연속 하락으로 4종 중 장기 추세가 가장 약함</li>
+        </ul>
+        <p>○ 장기 추세 전환에는 가격 신호(주봉 이평 회복)와 거시 신호(인상 사이클 종료 시사)가 함께 필요하다는 지난 회차 판단을 유지함</p>
+      </div>
+    </div>
+    <div class="scen">
+      <div class="sc"><h4>장기 바닥 다지기</h4><dl>
+        <dt>성립 조건</dt><dd>BTC 주봉 종가가 8월 저가(88,342,000원) 위를 계속 지키며 200주선(약 9,662만원)을 회복하고, 12월 FOMC에서 인상 속도 조절이 시사되며, 현물 ETF가 주간 순유입으로 전환</dd>
+        <dt>무효화 조건</dt><dd>BTC 주봉 종가가 8월 저가 하회</dd></dl></div>
+      <div class="sc"><h4>장기 약세 연장</h4><dl>
+        <dt>성립 조건</dt><dd>주봉 연속 하락 7주 이상, 12월 50bp 인상 또는 11월 CPI 재차 상회, 알트코인 52주 신저가 갱신 지속</dd>
+        <dt>무효화 조건</dt><dd>BTC 주봉 종가 기준 20주선(약 1억 258만원) 회복과 주봉 RSI 50 상향 돌파</dd></dl></div>
+    </div>
+  </article>
+</section>
+
+<!-- ⑥ 위험과 관찰 목록 -->
+<section class="block" id="sec-risk">
+  <div class="sec-head"><span class="no">⑥ 주요 위험과 관찰 목록</span><h2>위험 요인 · 영향 자산 · 확인할 신호</h2><p>목표가와 매수·매도 권유는 포함하지 않음 · 가격 수준은 실제 고가·저가와 이동평균을 관찰 기준으로만 사용</p></div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>위험 요인</th><th>영향받는 자산</th><th>확인할 신호</th><th>시점</th></tr></thead>
+      <tbody>
+        <tr><td>엔비디아 실적 후 기술주 급변</td><td>BTC · ETH</td><td>실적·가이던스, 나스닥 선물 반응, 후임 CEO 관련 언급</td><td>11/18 07:00 KST</td></tr>
+        <tr><td>현물 ETF 유출 장기화</td><td>BTC · ETH</td><td>8거래일 이상 연속 유출 여부, 주간 유출 4주 연속 여부</td><td>매 거래일</td></tr>
+        <tr><td>52주 저가 재이탈</td><td>BTC · XRP · DOGE</td><td>86,110,000원 / 1,239원 / 77.0원 일봉 종가 하회</td><td>상시</td></tr>
+        <tr><td>주말 유동성 공백</td><td>4종 (알트 영향 큼)</td><td>주말 청산 규모, 업비트 주말 거래대금</td><td>11/21~22</td></tr>
+        <tr><td>12월 FOMC 50bp 인상</td><td>4종 전체</td><td>연준 위원 발언, 금리선물 50bp 확률</td><td>12/9</td></tr>
+        <tr><td>11월 CPI 재차 상회</td><td>4종 전체</td><td>전월비 헤드라인·근원 vs 예상치</td><td>12/10</td></tr>
+        <tr><td>국내 프리미엄 축소</td><td>4종 (원화 가격)</td><td>USDT/KRW와 원/달러 괴리 축소 속도</td><td>매 영업일</td></tr>
+        <tr><td>국내 제도 변화</td><td>국내 거래소 전반</td><td>디지털자산기본법 정부안 공개, 거래소 대주주 지분 규제</td><td>11월 중 (전망)</td></tr>
+        <tr><td>거래소 개별 공지</td><td>해당 코인</td><td>업비트 입출금 중단·유의종목 지정 (이번 주 KAVA·WAVES)</td><td>상시</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 누적 기록 -->
+<section class="block" id="sec-history">
+  <div class="sec-head"><span class="no">누적 관리</span><h2>주간 스냅샷 기록</h2><p>보고서를 만들 때마다 같은 산식으로 한 줄씩 추가됨 (data/snapshots.csv)</p></div>
+  <div class="tbl-wrap">
+    <table class="num">
+      <thead><tr><th>가격 기준 시각 (KST)</th><th class="r cc c-BTC">BTC</th><th class="r cc c-ETH">ETH</th><th class="r cc c-XRP">XRP</th><th class="r cc c-DOGE">DOGE</th><th>보고서</th></tr></thead>
+      <tbody><tr><td>2026-11-16 09:00</td><td class="r cc c-BTC"><span class="down">▼ −12.21%</span><br><span class="small">89,949,000원</span></td><td class="r cc c-ETH"><span class="down">▼ −13.37%</span><br><span class="small">2,526,000원</span></td><td class="r cc c-XRP"><span class="down">▼ −12.12%</span><br><span class="small">1,341원</span></td><td class="r cc c-DOGE"><span class="down">▼ −12.80%</span><br><span class="small">82.4원</span></td><td><a href="2026-11-16.html">2026-11-16.html</a></td></tr><tr><td>2026-11-14 09:00</td><td class="r cc c-BTC"><span class="down">▼ −9.82%</span><br><span class="small">93,226,000원</span></td><td class="r cc c-ETH"><span class="down">▼ −13.82%</span><br><span class="small">2,631,000원</span></td><td class="r cc c-XRP"><span class="down">▼ −14.24%</span><br><span class="small">1,379원</span></td><td class="r cc c-DOGE"><span class="down">▼ −10.74%</span><br><span class="small">88.1원</span></td><td><a href="2026-11-14.html">2026-11-14.html</a></td></tr></tbody>
+    </table>
+  </div>
+  <p class="small">※ 각 칸은 주간 등락률(현재 가격 / 7일 전 가격 − 1)이며 회차별 기준 시각이 달라 기간이 겹칠 수 있음 (11/14판과 11/16판은 11/9~11/14가 겹침) · 업비트 일봉은 09:00 KST 마감이므로 07:00 열람용 보고서는 전일 09:00 마감 일봉을 기준으로 함</p>
+</section>
+
+<!-- ⑦ 출처와 산출 기준 -->
+<section class="block" id="sec-sources">
+  <div class="sec-head"><span class="no">⑦ 출처와 산출 기준</span><h2>출처 · 계산 방식 · 검증 한계</h2></div>
+  <div class="howto">
+    <div class="prose">
+      <h3>가격·수익률 계산 방식</h3>
+      <p>○ 가격: 업비트 Open API <code>/v1/candles/days</code> KRW 마켓 일봉 종가(trade_price), 조회 2026-11-17 08:26 KST</p>
+      <p>○ 업비트 일봉은 09:00 KST에 시작·마감되므로 ‘11/15 일봉 종가’는 11/16 09:00 직전 마지막 체결가이며 이를 현재 가격으로 사용함</p>
+      <p>○ 7일 전 가격은 11/8 일봉 종가(11/9 09:00 직전 체결가)이며 두 값 모두 같은 시각(09:00 KST) 기준임</p>
+      <p>※ 주간 등락률 = (현재 가격 ÷ 7일 전 가격 − 1) × 100, 소수 둘째 자리 반올림</p>
+      <p>※ 정규화 지수 = 해당일 종가 ÷ 11/8 일봉 종가 × 100</p>
+      <p>○ 기술적 지표(⑤): 일봉 200개, 주봉 200개는 11/16 09:00까지, 1시간봉·4시간봉 200개는 발행 직전(11/17 08시대)까지로 직접 계산 · RSI(14)·ATR(14)는 와일더 평활, 볼린저밴드는 20일·2표준편차(모표준편차), MACD는 12·26·9 지수이동평균, 이동평균은 단순평균 · 산식은 <code>scripts/indicators.py</code></p>
+      <p>○ 호가 잔량은 11/17 08:28 KST 업비트 호가 30단계 스냅샷이며 기준 시각(11/16 09:00)과 다름</p>
+    </div>
+    <div class="prose">
+      <h3>검증하지 못한 내용과 데이터 한계</h3>
+      <p>○ 업비트 API 외 원문 사이트(SEC·Farside·CoinDesk 등)는 직접 열람하지 못해 검색 결과의 발췌로 확인했으며, 원문 수치와 다를 수 있음</p>
+      <p>○ 11/16 BTC·ETH ETF 순유출입, XRP·DOGE ETF 이번 주 수치, BTC 선물 미결제약정·펀딩비는 확인 불가</p>
+      <p>○ 공포·탐욕 지수 13은 11/16 국내 보도에서 인용했으며 원 기사를 특정하지 못했음</p>
+      <p>○ 로건 댈러스 연은 총재 발언 날짜, 도지코인 재단 관련 헤드라인 날짜는 확인 불가</p>
+      <p>○ 업비트 공지사항 원문을 직접 조회하지 못해 공지는 언론 보도로만 확인했음</p>
+      <p>○ 해외 거래소 동일 시각 가격을 확보하지 못해 코인별 김치프리미엄은 자체 산출하지 않았음</p>
+      <p>○ 실시간 갱신 기능 없음 → 열람 시점과 무관하게 위 기준 시각의 스냅샷임</p>
+    </div>
+  </div>
+
+  <h3>항목별 원문 링크</h3>
+  <ol class="src-list">
+    <li><a href="https://docs.upbit.com/kr" target="_blank" rel="noopener">업비트 Open API 문서</a> <span class="dom">docs.upbit.com</span> · 가격 원자료 (일봉·주봉·분봉·호가)</li>
+    <li><a href="https://upbit.com/service_center/notice" target="_blank" rel="noopener">업비트 공지사항</a> <span class="dom">upbit.com</span> · 입출금·거래지원 원문 확인처</li>
+    <li><a href="https://blockchain.news/flashnews/bitcoin-etfs-185-4m-net-outflow-nov-13" target="_blank" rel="noopener">Blockchain.News – BTC ETF 11/13 −1.854억달러</a> <span class="dom">blockchain.news</span></li>
+    <li><a href="https://stablecoininsider.org/bitcoin-etf-outflows-seven-days/" target="_blank" rel="noopener">Stablecoin Insider – BTC ETF 7거래일 −19.07억달러</a> <span class="dom">stablecoininsider.org</span></li>
+    <li><a href="https://www.kucoin.com/news/flash/us-spot-bitcoin-etfs-see-185m-outflows-on-7th-consecutive-day" target="_blank" rel="noopener">KuCoin News – BTC ETF 7거래일 연속 유출</a> <span class="dom">kucoin.com</span></li>
+    <li><a href="https://en.bloomingbit.io/feed/news/124515" target="_blank" rel="noopener">Bloomingbit – BTC ETF 주간 −10.65억달러</a> <span class="dom">bloomingbit.io</span></li>
+    <li><a href="https://fxstreet.com/cryptocurrencies/news/crypto-today-bitcoin-ethereum-xrp-face-increasing-selling-pressure-etf-outflows-202611161030" target="_blank" rel="noopener">FXStreet – BTC·ETH·XRP 매도 압력, ETH ETF 주간 유출</a> <span class="dom">fxstreet.com</span> · 2026-11-16</li>
+    <li><a href="https://www.tradingnews.com/news/ibit-etf-slides-to-36-usd-as-bitcoin-etf-ooutflows" target="_blank" rel="noopener">TradingNews – IBIT 11/16 마감</a> <span class="dom">tradingnews.com</span></li>
+    <li><a href="https://decrypt.co/383366/bitcoin-2-billion-liquidation-weekend-traders-watching-60000" target="_blank" rel="noopener">Decrypt – 주말 청산 20억달러</a> <span class="dom">decrypt.co</span></li>
+    <li><a href="https://en.bloomingbit.io/feed/news/124486" target="_blank" rel="noopener">Bloomingbit – 청산 17.1억달러</a> <span class="dom">bloomingbit.io</span></li>
+    <li><a href="https://cryptoticker.io/en/crypto-liquidations-2-billion-long-squeeze-bitcoin-ether/" target="_blank" rel="noopener">CryptoTicker – 청산 20억달러, 롱 중심</a> <span class="dom">cryptoticker.io</span></li>
+    <li><a href="https://cryptoticker.io/en/crypto-news-bitcoin-falls-to-63500-fed-hike-bets-november-14-2026/" target="_blank" rel="noopener">CryptoTicker – BTC 6만3,500달러 (11/14)</a> <span class="dom">cryptoticker.io</span></li>
+    <li><a href="https://www.cryptotimes.io/2026/11/15/why-is-bitcoin-price-going-down-will-btc-crash-to-60000/" target="_blank" rel="noopener">The Crypto Times – BTC 하락 원인</a> <span class="dom">cryptotimes.io</span> · 2026-11-15</li>
+    <li><a href="https://www.tokenpost.com/news/investing/57582" target="_blank" rel="noopener">TokenPost – BTC 11/14 19:31 ET 6만3,775달러</a> <span class="dom">tokenpost.com</span></li>
+    <li><a href="https://coindesk.com/markets/2026/11/15/xrp-crashes-to-its-lowest-since-november-2024-as-money-leaves-crypto" target="_blank" rel="noopener">CoinDesk – XRP 2024년 11월 이후 최저</a> <span class="dom">coindesk.com</span> · 2026-11-15</li>
+    <li><a href="https://www.tokenpost.com/news/investing/58899" target="_blank" rel="noopener">TokenPost – XRP 미결제약정 −6.28%</a> <span class="dom">tokenpost.com</span> · 2026-11-16</li>
+    <li><a href="https://www.fool.com/investing/2026/11/16/theres-now-100-chance-fed-rate-hike-in-december-thats-not-worst-news-for-wall-street/" target="_blank" rel="noopener">Motley Fool – 12월 인상 확률 100%</a> <span class="dom">fool.com</span> · 2026-11-16</li>
+    <li><a href="https://www.cnbc.com/2026/11/10/fed-governor-waller-sees-december-hike-likely.html" target="_blank" rel="noopener">CNBC – 월러 이사 12월 인상 지지</a> <span class="dom">cnbc.com</span> · 2026-11-10</li>
+    <li><a href="https://finance.yahoo.com/economy/policy/articles/fed-officials-open-door-half-164918823.html" target="_blank" rel="noopener">Yahoo Finance – 연준 인사 추가 인상 언급</a> <span class="dom">finance.yahoo.com</span></li>
+    <li><a href="https://www.sec.gov/Archives/edgar/data/0001045810/000104581026000082/nvidiaannouncesceotransiti.htm" target="_blank" rel="noopener">NVIDIA Form 8-K – 실적 발표 일정</a> <span class="dom">sec.gov</span> · 2026-11-12</li>
+    <li><a href="https://www.ajunews.com/view/20261116082543034" target="_blank" rel="noopener">아주경제 – 주말 급락 딛고 반등, 6만5천달러대</a> <span class="dom">ajunews.com</span> · 2026-11-16</li>
+    <li><a href="https://www.g-enews.com/article/Securities/2026/11/20261116152924753138169980b3_1" target="_blank" rel="noopener">글로벌이코노믹 – 비트코인 9천만원 붕괴</a> <span class="dom">g-enews.com</span> · 2026-11-16</li>
+    <li><a href="https://www.ppss.kr/news/articleView.html?idxno=321166" target="_blank" rel="noopener">ㅍㅍㅅㅅ – 6만2천달러까지, ETF 7거래일 유출</a> <span class="dom">ppss.kr</span></li>
+    <li><a href="https://betanews.net/article/view/beta202611160124" target="_blank" rel="noopener">베타뉴스 – 원·달러 1,335.7원 마감</a> <span class="dom">betanews.net</span> · 2026-11-16</li>
+    <li><a href="https://www.tokenpost.kr/news/insights/438987" target="_blank" rel="noopener">토큰포스트 – 달러-원 1,335.7원</a> <span class="dom">tokenpost.kr</span> · 2026-11-16</li>
+    <li><a href="http://www.mediadale.com/news/articleView.html?idxno=296573" target="_blank" rel="noopener">미디어데일 – 원·달러 1,335.7원 마감</a> <span class="dom">mediadale.com</span></li>
+    <li><a href="https://news.mtn.co.kr/article/2026110915531382790" target="_blank" rel="noopener">MTN – 디지털자산기본법 정부안 발표 임박</a> <span class="dom">mtn.co.kr</span> · 2026-11-09</li>
+    <li><a href="https://www.digitaltoday.co.kr/disclosure/articleView.html?idxno=715773" target="_blank" rel="noopener">디지털투데이 – 업비트 KAVA 유의 종목 지정</a> <span class="dom">digitaltoday.co.kr</span></li>
+    <li><a href="https://www.coinreaders.com/270274" target="_blank" rel="noopener">코인리더스 – 업비트 KAVA 입출금 중단</a> <span class="dom">coinreaders.com</span></li>
+    <li><a href="https://www.digitaltoday.co.kr/disclosure/articleView.html?idxno=714421" target="_blank" rel="noopener">디지털투데이 – 업비트 WAVES 유의 종목 지정</a> <span class="dom">digitaltoday.co.kr</span></li>
+    <li><a href="https://www.gukjenews.com/news/articleView.html?idxno=3752422" target="_blank" rel="noopener">국제뉴스 – 업비트 SOPH·ZIL 거래지원 종료</a> <span class="dom">gukjenews.com</span></li>
+    <li><a href="https://economybloc.com/article/122663/" target="_blank" rel="noopener">이코노미블록 – 업비트 CBK 입출금 중단</a> <span class="dom">economybloc.com</span></li>
+    <li><a href="https://economybloc.com/article/122662/" target="_blank" rel="noopener">이코노미블록 – 업비트 만트라 거래지원 종료</a> <span class="dom">economybloc.com</span></li>
+  </ol>
+
+  <h3>배경 자료 (분석 기간 밖 또는 지난 회차 다룬 내용)</h3>
+  <ul class="pts">
+    <li>10월 CPI(11/10 발표), 엔비디아 CEO 사임(11/12) 상세 내용 · <a href="2026-11-14.html">11/14판 보고서</a></li>
+    <li>BTC 현물 ETF 11/11 −2.998억달러, 11/12 집계처별 충돌 · <a href="2026-11-14.html">11/14판 보고서</a> ④</li>
+    <li>21Shares–House of Doge 지원 계약 종료 (효력 11/5) · <a href="https://www.ad-hoc-news.de/boerse/news/marktberichte/dogecoin-price-stays-under-0-07-as-21shares-ends-house-of-doge-deal/70502525" target="_blank" rel="noopener">ad-hoc-news</a></li>
+  </ul>
+</section>
+
+</div>
+</main>
+<footer><div class="wrap">
+  <p>본 보고서는 정보 제공용 기준 시점 스냅샷이며 투자 권유가 아님 · 가격: 업비트 Open API · 해석·추정은 <span class="tag t-view">해석</span> 표시 문단에 한정됨</p>
+  <p class="num">생성 2026-11-17(화) 08:33 KST · 다음 정기 열람 예정: 2026-11-18(수) 07:00 KST · 지난 회차: <a href="2026-11-14.html">2026-11-14판</a></p>
+</div></footer>
+
+
+<script>
+(function(){
+  var coinBtns = document.querySelectorAll('[data-filter]');
+  var fnote = document.getElementById('filter-note');
+  // ⑤ 신호 판단 목록의 각 줄에 코인 표시를 붙임 (굵은 글씨의 코인명 기준)
+  document.querySelectorAll('.sig-list li').forEach(function(li){
+    var b = li.querySelector('b'); if (b) li.setAttribute('data-coin', b.textContent.trim());
+  });
+  var panels = document.querySelectorAll('[data-coin]');
+  function setFilter(c, fromClick){
+    coinBtns.forEach(function(b){ b.setAttribute('aria-pressed', b.getAttribute('data-filter')===c ? 'true':'false'); });
+    panels.forEach(function(p){
+      var list = p.getAttribute('data-coin').split(' ');
+      p.classList.toggle('is-filtered', c!=='ALL' && list.indexOf(c)===-1 && list.indexOf('ALL')===-1);
+    });
+    if (c === 'ALL') document.body.removeAttribute('data-focus'); else document.body.setAttribute('data-focus', c);
+    if (fnote){
+      fnote.textContent = c === 'ALL' ? '' : c + ' 선택 중 · ② 가격 카드, ③ 코인별 상세, ⑤ 신호 판단은 ' + c + '만 표시하고 차트·표는 ' + c + '를 강조함 (① 요약·④ 공통 요인은 전체 공통 내용이라 그대로임)';
+      fnote.setAttribute('data-empty', c === 'ALL' ? '1' : '0');
+    }
+    if (fromClick && c !== 'ALL'){
+      var target = document.getElementById('sec-price');
+      if (target && target.getBoundingClientRect().top > 160){
+        var bar = document.querySelector('.toolbar');
+        var y = target.getBoundingClientRect().top + window.pageYOffset - (bar ? bar.offsetHeight + 12 : 70);
+        var smooth = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        window.scrollTo({ top: y, behavior: smooth ? 'smooth' : 'auto' });
+      }
+    }
+  }
+  coinBtns.forEach(function(b){ b.addEventListener('click', function(){ setFilter(b.getAttribute('data-filter'), true); }); });
+  setFilter('ALL', false);
+
+  document.querySelectorAll('.fold').forEach(function(f){
+    var b = f.querySelector('.fold-btn');
+    b.setAttribute('aria-expanded', f.classList.contains('collapsed') ? 'false':'true');
+    b.addEventListener('click', function(){
+      var c = f.classList.toggle('collapsed');
+      b.setAttribute('aria-expanded', c ? 'false':'true');
+    });
+  });
+  function all(open){
+    document.querySelectorAll('.fold').forEach(function(f){
+      f.classList.toggle('collapsed', !open);
+      f.querySelector('.fold-btn').setAttribute('aria-expanded', open?'true':'false');
+    });
+  }
+  document.getElementById('btn-open').addEventListener('click', function(){ all(true); });
+  document.getElementById('btn-close').addEventListener('click', function(){ all(false); });
+
+  var note = document.getElementById('print-note');
+  var framed = false; try{ framed = window.self !== window.top; }catch(e){ framed = true; }
+  document.getElementById('btn-print').addEventListener('click', function(){
+    if (framed){
+      note.textContent = '미리보기 화면 안에서는 브라우저가 인쇄 창을 막을 수 있음 → index.html 파일을 엣지·크롬에서 직접 연 뒤 이 버튼(또는 Ctrl+P)으로 인쇄·PDF 저장 바람';
+      note.setAttribute('data-empty','0');
+    }
+    try{ window.print(); }catch(e){}
+  });
+})();
+</script>
+
+</body>
+</html>

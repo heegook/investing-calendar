@@ -50,6 +50,14 @@ def main():
             "fetched_at_kst": dt.datetime.now(KST).strftime("%Y-%m-%d %H:%M"),
         })
         time.sleep(0.25)
+    # 기술적 지표용 원자료 (⑤ 기간별 전망): 일봉 200개, 주봉 200개, 1시간봉·4시간봉 200개
+    for m in MARKETS[:4]:
+        for kind, path in [("day200", "days"), ("week", "weeks"), ("h1", "minutes/60"), ("h4", "minutes/240")]:
+            url = f"https://api.upbit.com/v1/candles/{path}?market={m}&count=200&to={to_utc:%Y-%m-%dT%H:%M:%SZ}"
+            json.dump(get(url), open(os.path.join(raw_dir, f"{kind}_{m}.json"), "w"), ensure_ascii=False, indent=1)
+            time.sleep(0.25)
+    ob = get("https://api.upbit.com/v1/orderbook?markets=" + ",".join(MARKETS[:4]))
+    json.dump(ob, open(os.path.join(raw_dir, "orderbook_now.json"), "w"), ensure_ascii=False, indent=1)
     ticker = get("https://api.upbit.com/v1/ticker?markets=" + ",".join(MARKETS))
     json.dump(ticker, open(os.path.join(raw_dir, "ticker.json"), "w"), ensure_ascii=False, indent=1)
 

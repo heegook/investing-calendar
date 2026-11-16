@@ -46,7 +46,10 @@ def load(raw, kind, m):
     return sorted(d, key=lambda c: c["candle_date_time_kst"])  # 과거 → 최근
 
 def compute(raw, m):
-    D = load(raw, "day200", m); W = load(raw, "week", m); H1 = load(raw, "h1", m); H4 = load(raw, "h4", m)
+    # 단기 지표는 발행 직전 최신 시간봉(h1live·h4live)이 있으면 그것을 우선 사용함
+    k1 = "h1live" if os.path.exists(os.path.join(raw, f"h1live_{m}.json")) else "h1"
+    k4 = "h4live" if os.path.exists(os.path.join(raw, f"h4live_{m}.json")) else "h4"
+    D = load(raw, "day200", m); W = load(raw, "week", m); H1 = load(raw, k1, m); H4 = load(raw, k4, m)
     dc = [c["trade_price"] for c in D]; wc = [c["trade_price"] for c in W]
     h1c = [c["trade_price"] for c in H1]; h4c = [c["trade_price"] for c in H4]
     last = dc[-1]
@@ -67,7 +70,7 @@ def compute(raw, m):
         "h4_rsi": rsi(h4c), "h4_ma20": sma(h4c, 20),
         "h24_hi": max(c["high_price"] for c in h24), "h24_lo": min(c["low_price"] for c in h24),
         "atr_d_pct": atr(D) / last * 100,
-        "h1_last": h1c[-1], "h1_time": H1[-1]["candle_date_time_kst"],
+        "h1_last": h1c[-1], "h1_time": H1[-1]["candle_date_time_kst"], "h4_time": H4[-1]["candle_date_time_kst"],
         # 중기(7일): 일봉
         "ma5": sma(dc, 5), "ma20": sma(dc, 20), "ma60": sma(dc, 60), "ma120": sma(dc, 120), "ma200d": sma(dc, 200),
         "d_rsi": rsi(dc), "pctb": pb, "bb_lo": bl, "bb_up": bu, "macd_h": mh, "macd_h_prev": mh_prev,

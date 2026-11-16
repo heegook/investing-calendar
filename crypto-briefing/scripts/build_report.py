@@ -149,8 +149,8 @@ def build(basis):
     if os.path.exists(os.path.join(raw, "day200_KRW-BTC.json")):
         T = {c[0]: compute(raw, c[1]) for c in COINS}
         def gap(r, k): return (r["last"] / r[k] - 1) * 100
-        def cell_gap(r, k):
-            v = gap(r, k); word = "상회" if v > 0 else "하회"
+        def cell_gap(r, k, base="last"):
+            v = (r[base] / r[k] - 1) * 100; word = "상회" if v > 0 else "하회"
             return f'<td class="r"><span class="{cls(v)}">{("+" if v > 0 else "−")}{abs(v):.1f}%</span><br><span class="small">{word} · {fmt(r[k])}</span></td>'
         def cell_rsi(v):
             lab = "과매도(30↓)" if v < 30 else "과매수(70↑)" if v > 70 else "약세권(30~50)" if v < 50 else "강세권(50~70)"
@@ -160,11 +160,16 @@ def build(basis):
             head = "".join(f'<th class="r cc c-{c[0]}">{c[0]}</th>' for c in COINS)
             body = "".join(f'<tr><td>{name}<br><span class="small">{basis_}</span></td>{"".join(fn(T[c[0]]).replace(chr(60) + "td class=" + chr(34) + "r", chr(60) + "td class=" + chr(34) + "r cc c-" + c[0], 1) for c in COINS)}</tr>' for name, basis_, fn in rows)
             return f'<div class="tbl-wrap"><table class="num"><thead><tr><th>지표</th>{head}</tr></thead><tbody>{body}</tbody></table></div>'
+        def hlab(t, hrs):
+            a = dt.datetime.fromisoformat(t); b = a + dt.timedelta(hours=hrs)
+            return f"{a.month}/{a.day} {a:%H:%M}~{b:%H:%M} 봉까지"
+        t1, t4 = T["BTC"]["h1_time"], T["BTC"]["h4_time"]
+        e1 = dt.datetime.fromisoformat(t1) + dt.timedelta(hours=1); s1 = e1 - dt.timedelta(hours=24)
         tech["{{TECH_SHORT}}"] = table([
-            ("1시간봉 RSI(14)", "11/14 08:00~09:00 봉까지", lambda r: cell_rsi(r["h1_rsi"])),
-            ("4시간봉 RSI(14)", "11/14 05:00~09:00 봉까지", lambda r: cell_rsi(r["h4_rsi"])),
-            ("1시간봉 60이평 대비", "약 2.5일 평균", lambda r: cell_gap(r, "h1_ma60")),
-            ("최근 24시간 고가 / 저가", "11/13 09:00~11/14 09:00", lambda r: cell(f'{fmt(r["h24_hi"])} / {fmt(r["h24_lo"])}')),
+            ("1시간봉 RSI(14)", hlab(t1, 1), lambda r: cell_rsi(r["h1_rsi"])),
+            ("4시간봉 RSI(14)", hlab(t4, 4), lambda r: cell_rsi(r["h4_rsi"])),
+            ("1시간봉 60이평 대비", "최신 1시간봉 종가 기준", lambda r: cell_gap(r, "h1_ma60", "h1_last")),
+            ("최근 24시간 고가 / 저가", f"{s1.month}/{s1.day} {s1:%H:%M}~{e1.month}/{e1.day} {e1:%H:%M}", lambda r: cell(f'{fmt(r["h24_hi"])} / {fmt(r["h24_lo"])}')),
             ("일봉 ATR(14) ÷ 종가", "하루 평균 진폭", lambda r: cell(f'{r["atr_d_pct"]:.1f}%', "목표가 아님, 변동성 참고")),
         ])
         tech["{{TECH_MID}}"] = table([
@@ -181,7 +186,7 @@ def build(basis):
             ("200주 이평 대비", "약 4년 평균", lambda r: cell_gap(r, "w_ma200")),
             ("20주 / 50주 이평 배열", "중장기 추세", lambda r: cell("20주 < 50주" if r["w_ma20"] < r["w_ma50"] else "20주 > 50주", "역배열(약세)" if r["w_ma20"] < r["w_ma50"] else "정배열")),
             ("50주 이평 대비", "약 1년 평균", lambda r: cell_gap(r, "w_ma50")),
-            ("주봉 RSI(14)", "11/9 주 진행 중 봉 포함", lambda r: cell_rsi(r["w_rsi"])),
+            ("주봉 RSI(14)", "최근 주봉 기준", lambda r: cell_rsi(r["w_rsi"])),
             ("52주 고점 대비", "주봉 고가 기준", lambda r: cell(pct((r["last"] / r["hi52"] - 1) * 100), f'고점 {fmt(r["hi52"])}')),
             ("52주 저가 대비", "주봉 저가 기준", lambda r: cell(pct((r["last"] / r["lo52"] - 1) * 100), f'저가 {fmt(r["lo52"])}')),
         ])
@@ -206,7 +211,9 @@ def build(basis):
     full = head_bits + fragment[:title_end] + "\n</head>\n<body>\n" + fragment[title_end:] + "\n</body>\n</html>\n"
 
     os.makedirs(os.path.join(ROOT, "dist"), exist_ok=True)
-    open(os.path.join(ROOT, "dist", "artifact.html"), "w", encoding="utf-8").write(fragment)
+    # 아티팩트(claude.ai)에서는 상대 경로 보관본이 열리지 않으므로 GitHub 보관 위치로 연결함
+    gh = "https://github.com/heegook/investing-calendar/blob/claude/upbit-crypto-briefing-report-3wf1re/crypto-briefing/reports/"
+    open(os.path.join(ROOT, "dist", "artifact.html"), "w", encoding="utf-8").write(fragment.replace('href="reports/', f'href="{gh}'))
     open(os.path.join(ROOT, "index.html"), "w", encoding="utf-8").write(full)
     # 보관본은 reports/ 하위에 있으므로 상대 링크 보정
     open(os.path.join(ROOT, "reports", f"{basis.isoformat()}.html"), "w", encoding="utf-8").write(full.replace('href="reports/', 'href="'))
