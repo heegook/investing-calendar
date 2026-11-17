@@ -10,6 +10,7 @@
       <div><dt>정기 열람</dt><dd>매주 수요일·금요일 07:00 KST</dd></div>
     </dl>
     <span class="snapshot-flag">기준 시점 스냅샷 · 실시간 시세 아님 (자동 갱신 미구현)</span>
+    {{EDITION_NAV}}
   </div>
 </header>
 
@@ -23,6 +24,7 @@
       <button class="btn" type="button" data-filter="DOGE" aria-pressed="false">DOGE</button>
     </div>
     <div class="seg">
+      <a class="btn" href="#sec-history">보관함·달력</a>
       <button class="btn" type="button" id="btn-open">모두 펼치기</button>
       <button class="btn" type="button" id="btn-close">모두 접기</button>
       <button class="btn primary" type="button" id="btn-print">인쇄 / PDF 저장</button>
@@ -544,7 +546,9 @@
 
 <!-- 누적 기록 -->
 <section class="block" id="sec-history">
-  <div class="sec-head"><span class="no">누적 관리</span><h2>주간 스냅샷 기록</h2><p>매주 수·금 07:00 열람용 보고서를 만들 때마다 같은 산식으로 한 줄씩 추가됨 (data/snapshots.csv)</p></div>
+  <div class="sec-head"><span class="no">보관함</span><h2>회차 보관함 · 일정 달력 · 누적 기록</h2><p>지난 브리핑을 날짜로 찾아 열고, 정기 열람일(수·금 07:00)과 주요 일정을 한국시간 기준으로 확인함</p></div>
+  {{ARCHIVE}}
+  <h3>주간 스냅샷 누적 기록</h3>
   <div class="tbl-wrap">
     <table class="num">
       <thead><tr><th>가격 기준 시각 (KST)</th><th class="r cc c-BTC">BTC</th><th class="r cc c-ETH">ETH</th><th class="r cc c-XRP">XRP</th><th class="r cc c-DOGE">DOGE</th><th>보고서</th></tr></thead>

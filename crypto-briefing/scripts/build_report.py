@@ -41,7 +41,8 @@ def load(basis):
     return out
 
 
-def build(basis):
+def build(basis, editions, latest):
+    """editions: 발행된 회차 기준일 목록(오름차순), latest: 가장 최근 회차 기준일"""
     d = load(basis)
     keys = [(basis - dt.timedelta(days=8 - i)).isoformat() for i in range(8)]  # 8개 일봉: D-8 .. D-1
     pts = [(basis - dt.timedelta(days=7 - i)) for i in range(8)]                # 각 일봉이 마감되는 날짜(09:00)
@@ -131,7 +132,7 @@ def build(basis):
         for r in csv.DictReader(open(path, encoding="utf-8")):
             hist.setdefault(r["basis_kst"], {})[r["market"]] = r
     hrows = []
-    for b in sorted(hist, reverse=True):
+    for b in sorted([b for b in hist if b[:10] <= basis.isoformat()], reverse=True):
         cells = []
         for sym, m, *_ in COINS:
             r = hist[b].get(m)
@@ -139,7 +140,8 @@ def build(basis):
             v = float(r["weekly_return_pct"])
             cells.append(f'<td class="r cc c-{sym}"><span class="{cls(v)}">{arrow(v)} {pct(v)}</span><br><span class="small">{fmt(float(r["price_now"]))}원</span></td>')
         fn = b[:10] + ".html"
-        link = f'<a href="reports/{fn}">{fn}</a>' if os.path.exists(os.path.join(ROOT, "reports", fn)) or b[:10] == basis.isoformat() else '<span class="na">없음</span>'
+        link = (('<b>현재 회차</b>' if b[:10] == basis.isoformat() else f'<a href="reports/{fn}">{b[5:7].lstrip("0")}/{b[8:10].lstrip("0")} 회차 열기</a>')
+                if dt.date.fromisoformat(b[:10]) in editions else '<span class="na">없음</span>')
         hrows.append(f'<tr><td>{b}</td>{"".join(cells)}<td>{link}</td></tr>')
     history = "".join(hrows) or '<tr><td colspan="6">기록 없음</td></tr>'
 
@@ -172,14 +174,15 @@ def build(basis):
             ("최근 24시간 고가 / 저가", f"{s1.month}/{s1.day} {s1:%H:%M}~{e1.month}/{e1.day} {e1:%H:%M}", lambda r: cell(f'{fmt(r["h24_hi"])} / {fmt(r["h24_lo"])}')),
             ("일봉 ATR(14) ÷ 종가", "하루 평균 진폭", lambda r: cell(f'{r["atr_d_pct"]:.1f}%', "목표가 아님, 변동성 참고")),
         ])
+        lastd = basis - dt.timedelta(days=1)
         tech["{{TECH_MID}}"] = table([
-            ("일봉 RSI(14)", "11/13 일봉까지", lambda r: cell_rsi(r["d_rsi"])),
+            ("일봉 RSI(14)", f"{lastd.month}/{lastd.day} 일봉까지", lambda r: cell_rsi(r["d_rsi"])),
             ("볼린저밴드 %B (20, 2σ)", "0 미만 = 하단 밴드 아래", lambda r: cell(f'{r["pctb"]:+.2f}'.replace("-", "−"), "하단 이탈" if r["pctb"] < 0 else "하단 부근" if r["pctb"] < 0.2 else "밴드 안")),
             ("MACD 히스토그램 (12,26,9)", "전일 대비", lambda r: cell("음(−)" if r["macd_h"] < 0 else "양(+)", "음(−) 확대" if r["macd_h"] < r["macd_h_prev"] else "음(−) 축소" if r["macd_h"] < 0 else "양(+)")),
             ("5일 이평 대비", "단기 추세", lambda r: cell_gap(r, "ma5")),
             ("20일 이평 대비", "약 1개월 추세", lambda r: cell_gap(r, "ma20")),
             ("20일 고가 / 저가", "최근 20개 일봉", lambda r: cell(f'{fmt(r["hi20"])} / {fmt(r["lo20"])}')),
-            ("11/13 거래대금 ÷ 직전 20일 평균", "업비트 KRW 마켓", lambda r: cell(f'{r["vol_ratio"]:.2f}배', "급증" if r["vol_ratio"] >= 2 else "증가" if r["vol_ratio"] >= 1.2 else "평균 수준")),
+            (f"{lastd.month}/{lastd.day} 거래대금 ÷ 직전 20일 평균", "업비트 KRW 마켓", lambda r: cell(f'{r["vol_ratio"]:.2f}배', "급증" if r["vol_ratio"] >= 2 else "증가" if r["vol_ratio"] >= 1.2 else "평균 수준")),
             ("연속 하락 마감 일수", "일봉 종가 기준", lambda r: cell(f'{r["down_streak"]}일')),
         ])
         tech["{{TECH_LONG}}"] = table([
@@ -198,8 +201,9 @@ def build(basis):
     if os.path.exists(gt): gen = open(gt, encoding="utf-8").read().strip()
     else: open(gt, "w", encoding="utf-8").write(gen + "\n")
     body = open(os.path.join(ROOT, "reports", "src", f"{basis.isoformat()}.body.html"), encoding="utf-8").read()
+    archive, nav = archive_block(basis, editions, latest, hist)
     for k, v in {"{{CARDS}}": "".join(cards), "{{BARCHART}}": bar, "{{LINECHART}}": line, "{{DAILYTABLE}}": daily,
-                 "{{HISTORY}}": history, "{{GEN_TIME}}": gen, **tech}.items():
+                 "{{HISTORY}}": history, "{{ARCHIVE}}": archive, "{{EDITION_NAV}}": nav, "{{GEN_TIME}}": gen, **tech}.items():
         body = body.replace(k, v)
     tpl = open(os.path.join(ROOT, "scripts", "template.html"), encoding="utf-8").read()
     fragment = tpl.replace("{{BODY}}", body)
@@ -210,26 +214,78 @@ def build(basis):
     title_end = fragment.index("</style>") + len("</style>")
     full = head_bits + fragment[:title_end] + "\n</head>\n<body>\n" + fragment[title_end:] + "\n</body>\n</html>\n"
 
-    os.makedirs(os.path.join(ROOT, "dist"), exist_ok=True)
-    # 아티팩트(claude.ai)에서는 상대 경로 보관본이 열리지 않으므로 GitHub 보관 위치로 연결함
-    gh = "https://github.com/heegook/investing-calendar/blob/claude/upbit-crypto-briefing-report-3wf1re/crypto-briefing/reports/"
-    open(os.path.join(ROOT, "dist", "artifact.html"), "w", encoding="utf-8").write(fragment.replace('href="reports/', f'href="{gh}'))
-    open(os.path.join(ROOT, "index.html"), "w", encoding="utf-8").write(full)
-    # 보관본은 reports/ 하위에 있으므로 상대 링크 보정
-    open(os.path.join(ROOT, "reports", f"{basis.isoformat()}.html"), "w", encoding="utf-8").write(full.replace('href="reports/', 'href="'))
-
-    # 보관 목록
-    items = sorted([os.path.basename(p) for p in glob.glob(os.path.join(ROOT, "reports", "????-??-??.html"))], reverse=True)
-    lis = "".join(f'<li><a href="{f}">{f[:-5]} 브리핑</a></li>' for f in items)
-    open(os.path.join(ROOT, "reports", "index.html"), "w", encoding="utf-8").write(
-        f'''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>업비트 브리핑 보관함</title><style>body{{font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;max-width:720px;margin:40px auto;padding:0 16px;color:#121a2b;background:#fff;line-height:1.8}}
-h1{{font-size:24px;border-bottom:2px solid #13294b;padding-bottom:8px}}a{{color:#1f4f9a}}</style></head>
-<body><h1>업비트 코인 주간 브리핑 보관함</h1><p><a href="../index.html">← 최신 보고서</a></p><ul>{lis}</ul></body></html>''')
+    # 회차 보관본: reports/ 하위에 있으므로 'reports/' 상대 경로를 같은 폴더 기준으로 바꿈
+    open(os.path.join(ROOT, "reports", f"{basis.isoformat()}.html"), "w", encoding="utf-8").write(full.replace('href="reports/', 'href="').replace('"file": "reports/', '"file": "'))
+    if basis == latest:
+        os.makedirs(os.path.join(ROOT, "dist"), exist_ok=True)
+        # 아티팩트에는 reports/*.html 보관본을 함께 게시하므로 상대 경로 그대로 사용
+        open(os.path.join(ROOT, "dist", "artifact.html"), "w", encoding="utf-8").write(fragment)
+        open(os.path.join(ROOT, "index.html"), "w", encoding="utf-8").write(full)
     for sym, *_ in COINS:
         s = stats[sym]; print(f'{sym:5} {fmt(s["base"]):>13} → {fmt(s["cur"]):>13}  주간 {pct(s["wk"])}  1일 {pct(s["d1"])}')
     print("완료:", gen)
 
 
+def archive_block(basis, editions, latest, hist):
+    """보관함·달력 섹션(HTML+JSON)과 표지의 회차 이동 막대를 만듦. 링크는 루트 기준 'reports/…'로 씀"""
+    ev = json.load(open(os.path.join(ROOT, "data", "events.json"), encoding="utf-8"))["events"]
+    eds = []
+    for e in editions:
+        k = f"{e.isoformat()} 09:00"; rets = {}
+        for sym, m, *_ in COINS:
+            r = hist.get(k, {}).get(m)
+            rets[sym] = float(r["weekly_return_pct"]) if r else None   # 미보고는 None(0으로 채우지 않음)
+        gt = os.path.join(ROOT, "reports", "src", f"{e.isoformat()}.gentime")
+        pub = open(gt, encoding="utf-8").read().strip() if os.path.exists(gt) else ""
+        start = e - dt.timedelta(days=7)
+        eds.append({"date": e.isoformat(), "file": f"reports/{e.isoformat()}.html", "published": pub,
+                    "period": f"{start.month}/{start.day} 09:00 ~ {e.month}/{e.day} 09:00", "ret": rets})
+    data = {"current": basis.isoformat(), "latest": latest.isoformat(), "editions": eds, "events": ev,
+            "reading": {"weekdays": [3, 5], "time": "07:00"}}  # JS getDay 기준: 일=0 … 수=3, 금=5
+    rows = []
+    for x in reversed(eds):
+        cur = x["date"] == basis.isoformat()
+        cells = "".join(
+            f'<td class="r cc c-{sym}">' + ('<span class="na">미보고</span>' if v is None else f'<span class="{cls(v)}">{arrow(v)} {pct(v)}</span>') + '</td>'
+            for sym, v in x["ret"].items())
+        d = dt.date.fromisoformat(x["date"])
+        label = f'{d.month}/{d.day}({WD[d.weekday()]}) 회차'
+        link = f'<b>{label} · 지금 보는 중</b>' if cur else f'<a href="{x["file"]}">{label}</a>'
+        rows.append(f'<tr{" class=cur-row" if cur else ""}><td>{link}{" <span class=new-chip>최신</span>" if x["date"] == latest.isoformat() else ""}<br><span class="small">{x["period"]} · 발행 {x["published"]}</span></td>{cells}</tr>')
+    js = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
+    block = f'''<div class="arch" id="archive">
+    <div class="cal" id="cal" aria-label="회차·일정 달력">
+      <div class="cal-head"><button class="btn cal-nav" type="button" id="cal-prev" aria-label="이전 달">‹</button><h3 id="cal-title">달력</h3><button class="btn cal-nav" type="button" id="cal-next" aria-label="다음 달">›</button></div>
+      <div class="cal-grid" id="cal-grid" role="grid"></div>
+      <div class="cal-legend"><span><i class="lg-ed"></i>브리핑 회차 (가격 기준일)</span><span><i class="lg-read"></i>정기 열람일 수·금 07:00</span><span><i class="lg-ev"></i>주요 일정 (KST)</span><span><i class="lg-today"></i>오늘</span></div>
+    </div>
+    <div class="cal-side">
+      <div class="cal-detail" id="cal-detail" aria-live="polite"><p class="small">달력에서 날짜를 누르면 그날의 회차와 일정이 여기에 표시됨</p></div>
+    </div>
+  </div>
+  <h3>회차 목록</h3>
+  <div class="tbl-wrap"><table class="num"><thead><tr><th>회차 (분석 기간 · 발행 시각)</th>{"".join(f'<th class="r cc c-{c[0]}">{c[0]} 주간</th>' for c in COINS)}</tr></thead><tbody>{"".join(rows)}</tbody></table></div>
+  <script type="application/json" id="archive-data">{js}</script>'''
+    i = editions.index(basis)
+    prev_e = editions[i - 1] if i > 0 else None
+    next_e = editions[i + 1] if i + 1 < len(editions) else None
+    def lk(e, txt): return f'<a class="ed-btn" href="reports/{e.isoformat()}.html">{txt}</a>' if e else f'<span class="ed-btn off">{txt}</span>'
+    banner = '' if basis == latest else f'<p class="ed-banner">지금 보는 화면은 {basis.month}/{basis.day} 회차 보관본임 · <a href="reports/{latest.isoformat()}.html">최신 {latest.month}/{latest.day} 회차 보기 →</a></p>'
+    nav = (f'<div class="ed-nav">{lk(prev_e, "‹ 이전 회차")}<a class="ed-btn" href="#sec-history">회차 {i + 1}/{len(editions)} · 보관함·달력</a>{lk(next_e, "다음 회차 ›")}</div>{banner}')
+    return block, nav
+
+
+def main(argv):
+    eds = sorted(dt.date.fromisoformat(os.path.basename(p)[:10]) for p in glob.glob(os.path.join(ROOT, "reports", "src", "????-??-??.body.html")))
+    if argv:  # 특정 회차만 지정해도 보관함·달력이 일치하도록 전 회차를 함께 다시 만듦
+        assert dt.date.fromisoformat(argv[0]) in eds, "해당 날짜의 본문(reports/src/DATE.body.html)이 없음"
+    latest = eds[-1]
+    for e in eds:
+        print(f"── {e} 회차" + (" (최신)" if e == latest else ""))
+        build(e, eds, latest)
+    stale = os.path.join(ROOT, "reports", "index.html")
+    if os.path.exists(stale): os.remove(stale)   # 보관함은 보고서 안 ‘보관함·달력’ 섹션으로 대체
+
+
 if __name__ == "__main__":
-    build(dt.date.fromisoformat(sys.argv[1]) if len(sys.argv) > 1 else dt.datetime.now(KST).date())
+    main(sys.argv[1:])

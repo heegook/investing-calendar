@@ -204,6 +204,57 @@ td.c-on, th.c-on{background:transparent}
 .sig-list b{margin-right:6px}
 .sig{display:inline-block;margin-right:8px;vertical-align:1px;font-size:11.5px;font-weight:800;padding:1px 8px;border-radius:4px;border:1px solid currentColor}
 .sig.down{color:var(--down)} .sig.up{color:var(--up)} .sig.mixed{color:var(--muted)}
+
+/* 회차 이동 · 보관함 · 달력 */
+.ed-nav{display:flex;flex-wrap:wrap;gap:8px}
+.ed-btn{font-size:13px;font-weight:700;color:var(--on-navy);border:1px solid rgba(255,255,255,.35);padding:5px 12px;border-radius:6px;text-decoration:none}
+a.ed-btn:hover{background:rgba(255,255,255,.12)}
+.ed-btn.off{opacity:.4}
+.ed-banner{background:var(--warn-bg);color:var(--warn);font-weight:700;font-size:14px;padding:9px 14px;border-radius:6px}
+.ed-banner a{color:inherit}
+.arch{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.arch{grid-template-columns:minmax(0,1fr)}}
+.cal{border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:10px;background:var(--bg);min-width:0}
+.cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cal-head h3{font-size:17px}
+.cal-nav{font-size:18px;line-height:1;padding:4px 12px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-dow{font-size:12px;font-weight:700;color:var(--muted);text-align:center;padding:2px 0}
+.cal-dow.sun{color:var(--up)} .cal-dow.sat{color:var(--down)}
+.cal-cell{all:unset;box-sizing:border-box;min-height:74px;border:1px solid var(--line);border-radius:6px;padding:4px 5px;display:flex;flex-direction:column;gap:3px;cursor:pointer;background:var(--bg);min-width:0;overflow:hidden}
+.cal-cell:hover{border-color:var(--line-strong)}
+.cal-cell:focus-visible{outline:2px solid var(--strong);outline-offset:1px}
+.cal-cell.out{opacity:.35}
+.cal-cell.sel{border:2px solid var(--strong);padding:3px 4px}
+.cal-cell.today .cal-d{background:var(--strong);color:#fff;border-radius:999px;padding:0 6px}
+.cal-cell.read{background:var(--surface)}
+.cal-d{font-size:12.5px;font-weight:700;width:max-content}
+.cal-ed{font-size:11px;font-weight:800;color:#fff;background:var(--strong);border-radius:4px;padding:1px 5px;width:max-content;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-ed.cur{outline:2px solid var(--warn);outline-offset:1px}
+.cal-ret{font-size:11px;font-weight:700}
+.cal-ev{font-size:10.5px;line-height:1.3;color:var(--ink-2);border-left:2px solid var(--warn);padding-left:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.cal-rd{font-size:10.5px;color:var(--muted)}
+@media (max-width:560px){
+  .cal{padding:10px}
+  .cal-cell{min-height:52px;padding:3px}
+  .cal-ev,.cal-ret,.cal-rd{display:none}
+  .cal-ed{font-size:10px;padding:0 3px}
+  .cal-cell.has-ev::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--warn);margin-top:auto}
+}
+.cal-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.cal-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.lg-ed{background:var(--strong)} .lg-read{background:var(--surface);border:1px solid var(--line-strong)} .lg-ev{background:var(--warn)} .lg-today{background:var(--strong);border-radius:50%!important}
+.cal-side{display:grid;gap:12px;min-width:0}
+.cal-detail{border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:10px;background:var(--bg)}
+.cal-detail h4{font-size:16px;color:var(--ink)}
+.cal-detail ul{margin:0;padding-left:1.1em;display:grid;gap:6px;font-size:14px}
+.cal-detail .open-ed{display:inline-block;width:max-content;background:var(--strong);color:#fff;font-weight:700;font-size:14px;padding:7px 14px;border-radius:6px;text-decoration:none}
+.cal-detail .rets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;font-size:13px}
+.cal-detail .rets div{border:1px solid var(--line);border-radius:6px;padding:6px;text-align:center}
+.cur-row td{background:var(--surface)}
+.cal-ret.up,.rets .up{color:var(--up)} .cal-ret.down,.rets .down{color:var(--down)}
+section.block{scroll-margin-top:96px}
+.new-chip{font-size:11px;font-weight:800;color:var(--up);border:1px solid currentColor;border-radius:4px;padding:0 5px;margin-left:4px}
 /* 출처 */
 .src-list{display:grid;gap:4px;margin:0;padding-left:1.4em;font-size:13.5px}
 .src-list li{padding:3px 0}
@@ -237,6 +288,9 @@ footer .wrap{padding-block:20px 32px;display:grid;gap:6px}
   .sig-list li.is-filtered{display:block!important}
   .cc{opacity:1!important}
   .filter-note{display:none!important}
+  .ed-nav,.cal,.cal-side{display:none!important}
+  .arch{display:block}
+  .ed-btn{color:#000}
   .fold.collapsed > .fold-body{display:grid!important}
   .fold-btn::after{display:none}
   .cards{grid-template-columns:repeat(2,1fr)}
@@ -275,6 +329,7 @@ footer .wrap{padding-block:20px 32px;display:grid;gap:6px}
       <div><dt>정기 열람</dt><dd>매주 수요일·금요일 07:00 KST</dd></div>
     </dl>
     <span class="snapshot-flag">기준 시점 스냅샷 · 실시간 시세 아님 (자동 갱신 미구현)</span>
+    <div class="ed-nav"><a class="ed-btn" href="2026-11-14.html">‹ 이전 회차</a><a class="ed-btn" href="#sec-history">회차 2/2 · 보관함·달력</a><span class="ed-btn off">다음 회차 ›</span></div>
   </div>
 </header>
 
@@ -288,6 +343,7 @@ footer .wrap{padding-block:20px 32px;display:grid;gap:6px}
       <button class="btn" type="button" data-filter="DOGE" aria-pressed="false">DOGE</button>
     </div>
     <div class="seg">
+      <a class="btn" href="#sec-history">보관함·달력</a>
       <button class="btn" type="button" id="btn-open">모두 펼치기</button>
       <button class="btn" type="button" id="btn-close">모두 접기</button>
       <button class="btn primary" type="button" id="btn-print">인쇄 / PDF 저장</button>
@@ -742,7 +798,7 @@ footer .wrap{padding-block:20px 32px;display:grid;gap:6px}
   <!-- 중기 -->
   <article class="hz">
     <div class="hz-head"><span class="hz-chip">중기</span><div><h3>7일 이내 · 11/23(월) 09:00까지</h3><p class="small">근거: 일봉 RSI·볼린저밴드·MACD·이동평균(11/15 일봉까지), 거래대금, ETF 흐름, 주중 일정</p></div></div>
-    <div class="tbl-wrap"><table class="num"><thead><tr><th>지표</th><th class="r cc c-BTC">BTC</th><th class="r cc c-ETH">ETH</th><th class="r cc c-XRP">XRP</th><th class="r cc c-DOGE">DOGE</th></tr></thead><tbody><tr><td>일봉 RSI(14)<br><span class="small">11/13 일봉까지</span></td><td class="r cc c-BTC"><b>22.4</b><br><span class="small">과매도(30↓)</span></td><td class="r cc c-ETH"><b>25.7</b><br><span class="small">과매도(30↓)</span></td><td class="r cc c-XRP"><b>26.8</b><br><span class="small">과매도(30↓)</span></td><td class="r cc c-DOGE"><b>25.1</b><br><span class="small">과매도(30↓)</span></td></tr><tr><td>볼린저밴드 %B (20, 2σ)<br><span class="small">0 미만 = 하단 밴드 아래</span></td><td class="r cc c-BTC"><b>−0.04</b><br><span class=small>하단 이탈</span></td><td class="r cc c-ETH"><b>+0.02</b><br><span class=small>하단 부근</span></td><td class="r cc c-XRP"><b>+0.11</b><br><span class=small>하단 부근</span></td><td class="r cc c-DOGE"><b>+0.01</b><br><span class=small>하단 부근</span></td></tr><tr><td>MACD 히스토그램 (12,26,9)<br><span class="small">전일 대비</span></td><td class="r cc c-BTC"><b>음(−)</b><br><span class=small>음(−) 확대</span></td><td class="r cc c-ETH"><b>음(−)</b><br><span class=small>음(−) 확대</span></td><td class="r cc c-XRP"><b>음(−)</b><br><span class=small>음(−) 축소</span></td><td class="r cc c-DOGE"><b>음(−)</b><br><span class=small>음(−) 확대</span></td></tr><tr><td>5일 이평 대비<br><span class="small">단기 추세</span></td><td class="r cc c-BTC"><span class="down">−4.1%</span><br><span class="small">하회 · 93,792,200</span></td><td class="r cc c-ETH"><span class="down">−3.8%</span><br><span class="small">하회 · 2,625,200</span></td><td class="r cc c-XRP"><span class="down">−1.7%</span><br><span class="small">하회 · 1,364</span></td><td class="r cc c-DOGE"><span class="down">−4.5%</span><br><span class="small">하회 · 86.3</span></td></tr><tr><td>20일 이평 대비<br><span class="small">약 1개월 추세</span></td><td class="r cc c-BTC"><span class="down">−11.6%</span><br><span class="small">하회 · 101,807,650</span></td><td class="r cc c-ETH"><span class="down">−13.9%</span><br><span class="small">하회 · 2,934,500</span></td><td class="r cc c-XRP"><span class="down">−15.0%</span><br><span class="small">하회 · 1,577</span></td><td class="r cc c-DOGE"><span class="down">−14.8%</span><br><span class="small">하회 · 96.7</span></td></tr><tr><td>20일 고가 / 저가<br><span class="small">최근 20개 일봉</span></td><td class="r cc c-BTC"><b>110,000,000 / 86,110,000</b></td><td class="r cc c-ETH"><b>3,292,000 / 2,375,000</b></td><td class="r cc c-XRP"><b>1,800 / 1,239</b></td><td class="r cc c-DOGE"><b>109 / 77.0</b></td></tr><tr><td>11/13 거래대금 ÷ 직전 20일 평균<br><span class="small">업비트 KRW 마켓</span></td><td class="r cc c-BTC"><b>2.21배</b><br><span class=small>급증</span></td><td class="r cc c-ETH"><b>1.66배</b><br><span class=small>증가</span></td><td class="r cc c-XRP"><b>1.88배</b><br><span class=small>증가</span></td><td class="r cc c-DOGE"><b>1.64배</b><br><span class=small>증가</span></td></tr><tr><td>연속 하락 마감 일수<br><span class="small">일봉 종가 기준</span></td><td class="r cc c-BTC"><b>0일</b></td><td class="r cc c-ETH"><b>0일</b></td><td class="r cc c-XRP"><b>0일</b></td><td class="r cc c-DOGE"><b>0일</b></td></tr></tbody></table></div>
+    <div class="tbl-wrap"><table class="num"><thead><tr><th>지표</th><th class="r cc c-BTC">BTC</th><th class="r cc c-ETH">ETH</th><th class="r cc c-XRP">XRP</th><th class="r cc c-DOGE">DOGE</th></tr></thead><tbody><tr><td>일봉 RSI(14)<br><span class="small">11/15 일봉까지</span></td><td class="r cc c-BTC"><b>22.4</b><br><span class="small">과매도(30↓)</span></td><td class="r cc c-ETH"><b>25.7</b><br><span class="small">과매도(30↓)</span></td><td class="r cc c-XRP"><b>26.8</b><br><span class="small">과매도(30↓)</span></td><td class="r cc c-DOGE"><b>25.1</b><br><span class="small">과매도(30↓)</span></td></tr><tr><td>볼린저밴드 %B (20, 2σ)<br><span class="small">0 미만 = 하단 밴드 아래</span></td><td class="r cc c-BTC"><b>−0.04</b><br><span class=small>하단 이탈</span></td><td class="r cc c-ETH"><b>+0.02</b><br><span class=small>하단 부근</span></td><td class="r cc c-XRP"><b>+0.11</b><br><span class=small>하단 부근</span></td><td class="r cc c-DOGE"><b>+0.01</b><br><span class=small>하단 부근</span></td></tr><tr><td>MACD 히스토그램 (12,26,9)<br><span class="small">전일 대비</span></td><td class="r cc c-BTC"><b>음(−)</b><br><span class=small>음(−) 확대</span></td><td class="r cc c-ETH"><b>음(−)</b><br><span class=small>음(−) 확대</span></td><td class="r cc c-XRP"><b>음(−)</b><br><span class=small>음(−) 축소</span></td><td class="r cc c-DOGE"><b>음(−)</b><br><span class=small>음(−) 확대</span></td></tr><tr><td>5일 이평 대비<br><span class="small">단기 추세</span></td><td class="r cc c-BTC"><span class="down">−4.1%</span><br><span class="small">하회 · 93,792,200</span></td><td class="r cc c-ETH"><span class="down">−3.8%</span><br><span class="small">하회 · 2,625,200</span></td><td class="r cc c-XRP"><span class="down">−1.7%</span><br><span class="small">하회 · 1,364</span></td><td class="r cc c-DOGE"><span class="down">−4.5%</span><br><span class="small">하회 · 86.3</span></td></tr><tr><td>20일 이평 대비<br><span class="small">약 1개월 추세</span></td><td class="r cc c-BTC"><span class="down">−11.6%</span><br><span class="small">하회 · 101,807,650</span></td><td class="r cc c-ETH"><span class="down">−13.9%</span><br><span class="small">하회 · 2,934,500</span></td><td class="r cc c-XRP"><span class="down">−15.0%</span><br><span class="small">하회 · 1,577</span></td><td class="r cc c-DOGE"><span class="down">−14.8%</span><br><span class="small">하회 · 96.7</span></td></tr><tr><td>20일 고가 / 저가<br><span class="small">최근 20개 일봉</span></td><td class="r cc c-BTC"><b>110,000,000 / 86,110,000</b></td><td class="r cc c-ETH"><b>3,292,000 / 2,375,000</b></td><td class="r cc c-XRP"><b>1,800 / 1,239</b></td><td class="r cc c-DOGE"><b>109 / 77.0</b></td></tr><tr><td>11/15 거래대금 ÷ 직전 20일 평균<br><span class="small">업비트 KRW 마켓</span></td><td class="r cc c-BTC"><b>2.21배</b><br><span class=small>급증</span></td><td class="r cc c-ETH"><b>1.66배</b><br><span class=small>증가</span></td><td class="r cc c-XRP"><b>1.88배</b><br><span class=small>증가</span></td><td class="r cc c-DOGE"><b>1.64배</b><br><span class=small>증가</span></td></tr><tr><td>연속 하락 마감 일수<br><span class="small">일봉 종가 기준</span></td><td class="r cc c-BTC"><b>0일</b></td><td class="r cc c-ETH"><b>0일</b></td><td class="r cc c-XRP"><b>0일</b></td><td class="r cc c-DOGE"><b>0일</b></td></tr></tbody></table></div>
     <div class="hz-grid">
       <div class="prose">
         <h4>수급·일정 점검</h4>
@@ -830,11 +886,25 @@ footer .wrap{padding-block:20px 32px;display:grid;gap:6px}
 
 <!-- 누적 기록 -->
 <section class="block" id="sec-history">
-  <div class="sec-head"><span class="no">누적 관리</span><h2>주간 스냅샷 기록</h2><p>보고서를 만들 때마다 같은 산식으로 한 줄씩 추가됨 (data/snapshots.csv)</p></div>
+  <div class="sec-head"><span class="no">보관함</span><h2>회차 보관함 · 일정 달력 · 누적 기록</h2><p>지난 브리핑을 날짜로 찾아 열고, 정기 열람일(수·금 07:00)과 주요 일정을 한국시간 기준으로 확인함</p></div>
+  <div class="arch" id="archive">
+    <div class="cal" id="cal" aria-label="회차·일정 달력">
+      <div class="cal-head"><button class="btn cal-nav" type="button" id="cal-prev" aria-label="이전 달">‹</button><h3 id="cal-title">달력</h3><button class="btn cal-nav" type="button" id="cal-next" aria-label="다음 달">›</button></div>
+      <div class="cal-grid" id="cal-grid" role="grid"></div>
+      <div class="cal-legend"><span><i class="lg-ed"></i>브리핑 회차 (가격 기준일)</span><span><i class="lg-read"></i>정기 열람일 수·금 07:00</span><span><i class="lg-ev"></i>주요 일정 (KST)</span><span><i class="lg-today"></i>오늘</span></div>
+    </div>
+    <div class="cal-side">
+      <div class="cal-detail" id="cal-detail" aria-live="polite"><p class="small">달력에서 날짜를 누르면 그날의 회차와 일정이 여기에 표시됨</p></div>
+    </div>
+  </div>
+  <h3>회차 목록</h3>
+  <div class="tbl-wrap"><table class="num"><thead><tr><th>회차 (분석 기간 · 발행 시각)</th><th class="r cc c-BTC">BTC 주간</th><th class="r cc c-ETH">ETH 주간</th><th class="r cc c-XRP">XRP 주간</th><th class="r cc c-DOGE">DOGE 주간</th></tr></thead><tbody><tr class=cur-row><td><b>11/16(월) 회차 · 지금 보는 중</b> <span class=new-chip>최신</span><br><span class="small">11/9 09:00 ~ 11/16 09:00 · 발행 2026-11-17(화) 08:33 KST</span></td><td class="r cc c-BTC"><span class="down">▼ −12.21%</span></td><td class="r cc c-ETH"><span class="down">▼ −13.37%</span></td><td class="r cc c-XRP"><span class="down">▼ −12.12%</span></td><td class="r cc c-DOGE"><span class="down">▼ −12.80%</span></td></tr><tr><td><a href="2026-11-14.html">11/14(토) 회차</a><br><span class="small">11/7 09:00 ~ 11/14 09:00 · 발행 2026-11-14(토) 11:53 KST</span></td><td class="r cc c-BTC"><span class="down">▼ −9.82%</span></td><td class="r cc c-ETH"><span class="down">▼ −13.82%</span></td><td class="r cc c-XRP"><span class="down">▼ −14.24%</span></td><td class="r cc c-DOGE"><span class="down">▼ −10.74%</span></td></tr></tbody></table></div>
+  <script type="application/json" id="archive-data">{"current": "2026-11-16", "latest": "2026-11-16", "editions": [{"date": "2026-11-14", "file": "2026-11-14.html", "published": "2026-11-14(토) 11:53 KST", "period": "11/7 09:00 ~ 11/14 09:00", "ret": {"BTC": -9.82, "ETH": -13.82, "XRP": -14.24, "DOGE": -10.74}}, {"date": "2026-11-16", "file": "2026-11-16.html", "published": "2026-11-17(화) 08:33 KST", "period": "11/9 09:00 ~ 11/16 09:00", "ret": {"BTC": -12.21, "ETH": -13.37, "XRP": -12.12, "DOGE": -12.8}}], "events": [{"date": "2026-11-10", "time": "22:30", "label": "미국 10월 CPI 발표", "kind": "macro", "status": "지남", "source": "BLS"}, {"date": "2026-11-13", "time": "", "label": "엔비디아 CEO 사임 공시 (미국시간 11/12)", "kind": "market", "status": "지남", "source": "SEC 8-K"}, {"date": "2026-11-14", "time": "", "label": "주말 급락 · 청산 약 20억달러", "kind": "market", "status": "지남", "source": "Coinglass 인용 보도"}, {"date": "2026-11-17", "time": "11:00", "label": "업비트 CBK 입출금 일시 중단", "kind": "upbit", "status": "언론", "source": "이코노미블록"}, {"date": "2026-11-18", "time": "07:00", "label": "엔비디아 3분기 실적 컨퍼런스콜", "kind": "market", "status": "확정", "source": "SEC 8-K"}, {"date": "2026-11-26", "time": "10:00", "label": "XRPL 테스트넷·데브넷 초기화 (메인넷 무관)", "kind": "market", "status": "언론", "source": "XRPL 운영팀 안내 보도"}, {"date": "2026-11-26", "time": "", "label": "미국 추수감사절 휴장 (ETF 흐름 없음)", "kind": "macro", "status": "확정", "source": "NYSE 휴장일"}, {"date": "2026-12-10", "time": "04:00", "label": "FOMC 금리 결정 (미국시간 12/9 14:00)", "kind": "macro", "status": "확정", "source": "연준 일정"}, {"date": "2026-12-10", "time": "22:30", "label": "미국 11월 CPI 발표", "kind": "macro", "status": "확정", "source": "BLS 일정"}, {"date": "2026-12-14", "time": "15:00", "label": "업비트 만트라 거래지원 종료 (단일 보도)", "kind": "upbit", "status": "언론", "source": "이코노미블록"}], "reading": {"weekdays": [3, 5], "time": "07:00"}}</script>
+  <h3>주간 스냅샷 누적 기록</h3>
   <div class="tbl-wrap">
     <table class="num">
       <thead><tr><th>가격 기준 시각 (KST)</th><th class="r cc c-BTC">BTC</th><th class="r cc c-ETH">ETH</th><th class="r cc c-XRP">XRP</th><th class="r cc c-DOGE">DOGE</th><th>보고서</th></tr></thead>
-      <tbody><tr><td>2026-11-16 09:00</td><td class="r cc c-BTC"><span class="down">▼ −12.21%</span><br><span class="small">89,949,000원</span></td><td class="r cc c-ETH"><span class="down">▼ −13.37%</span><br><span class="small">2,526,000원</span></td><td class="r cc c-XRP"><span class="down">▼ −12.12%</span><br><span class="small">1,341원</span></td><td class="r cc c-DOGE"><span class="down">▼ −12.80%</span><br><span class="small">82.4원</span></td><td><a href="2026-11-16.html">2026-11-16.html</a></td></tr><tr><td>2026-11-14 09:00</td><td class="r cc c-BTC"><span class="down">▼ −9.82%</span><br><span class="small">93,226,000원</span></td><td class="r cc c-ETH"><span class="down">▼ −13.82%</span><br><span class="small">2,631,000원</span></td><td class="r cc c-XRP"><span class="down">▼ −14.24%</span><br><span class="small">1,379원</span></td><td class="r cc c-DOGE"><span class="down">▼ −10.74%</span><br><span class="small">88.1원</span></td><td><a href="2026-11-14.html">2026-11-14.html</a></td></tr></tbody>
+      <tbody><tr><td>2026-11-16 09:00</td><td class="r cc c-BTC"><span class="down">▼ −12.21%</span><br><span class="small">89,949,000원</span></td><td class="r cc c-ETH"><span class="down">▼ −13.37%</span><br><span class="small">2,526,000원</span></td><td class="r cc c-XRP"><span class="down">▼ −12.12%</span><br><span class="small">1,341원</span></td><td class="r cc c-DOGE"><span class="down">▼ −12.80%</span><br><span class="small">82.4원</span></td><td><b>현재 회차</b></td></tr><tr><td>2026-11-14 09:00</td><td class="r cc c-BTC"><span class="down">▼ −9.82%</span><br><span class="small">93,226,000원</span></td><td class="r cc c-ETH"><span class="down">▼ −13.82%</span><br><span class="small">2,631,000원</span></td><td class="r cc c-XRP"><span class="down">▼ −14.24%</span><br><span class="small">1,379원</span></td><td class="r cc c-DOGE"><span class="down">▼ −10.74%</span><br><span class="small">88.1원</span></td><td><a href="2026-11-14.html">11/14 회차 열기</a></td></tr></tbody>
     </table>
   </div>
   <p class="small">※ 각 칸은 주간 등락률(현재 가격 / 7일 전 가격 − 1)이며 회차별 기준 시각이 달라 기간이 겹칠 수 있음 (11/14판과 11/16판은 11/9~11/14가 겹침) · 업비트 일봉은 09:00 KST 마감이므로 07:00 열람용 보고서는 전일 09:00 마감 일봉을 기준으로 함</p>
@@ -969,6 +1039,64 @@ footer .wrap{padding-block:20px 32px;display:grid;gap:6px}
   document.getElementById('btn-open').addEventListener('click', function(){ all(true); });
   document.getElementById('btn-close').addEventListener('click', function(){ all(false); });
 
+
+  // 보관함·달력
+  (function(){
+    var el = document.getElementById('archive-data'); if (!el) return;
+    var D; try { D = JSON.parse(el.textContent); } catch(e){ return; }
+    var grid = document.getElementById('cal-grid'), title = document.getElementById('cal-title'), detail = document.getElementById('cal-detail');
+    function href(f){ return f; }   // 링크 경로는 빌드 단계에서 화면 위치(최신본/보관본)에 맞게 정해짐
+    var eds = {}; D.editions.forEach(function(x){ eds[x.date] = x; });
+    var evs = {}; D.events.forEach(function(x){ (evs[x.date] = evs[x.date] || []).push(x); });
+    function iso(d){ return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2); }
+    var kst = new Date(Date.now() + (9*60 + new Date().getTimezoneOffset())*60000), todayIso = iso(kst);
+    var cur = D.current.split('-'), view = new Date(+cur[0], +cur[1]-1, 1), selIso = D.current;
+    var all = Object.keys(eds).concat(Object.keys(evs)).sort();
+    var minM = new Date(+all[0].slice(0,4), +all[0].slice(5,7)-1, 1), maxM = new Date(+all[all.length-1].slice(0,4), +all[all.length-1].slice(5,7)-1, 1);
+    if (kst > maxM) maxM = new Date(kst.getFullYear(), kst.getMonth(), 1);
+    var W = '일월화수목금토';
+    function fmtPct(v){ if (v === null || v === undefined) return '미보고'; return (v>0?'▲ +':v<0?'▼ −':'± ') + Math.abs(v).toFixed(2) + '%'; }
+    function cls(v){ return v>0 ? 'up' : v<0 ? 'down' : ''; }
+    function render(){
+      title.textContent = view.getFullYear() + '년 ' + (view.getMonth()+1) + '월';
+      document.getElementById('cal-prev').disabled = view <= minM;
+      document.getElementById('cal-next').disabled = view >= maxM;
+      var h = '';
+      for (var i=0;i<7;i++) h += '<div class="cal-dow' + (i===0?' sun':i===6?' sat':'') + '">' + W[i] + '</div>';
+      var start = new Date(view.getFullYear(), view.getMonth(), 1 - view.getDay());
+      for (var k=0;k<42;k++){
+        var d = new Date(start.getFullYear(), start.getMonth(), start.getDate()+k), s = iso(d);
+        if (k >= 35 && d.getMonth() !== view.getMonth()) break;
+        var ed = eds[s], ev = evs[s] || [], read = D.reading.weekdays.indexOf(d.getDay()) !== -1;
+        var c = 'cal-cell' + (d.getMonth()!==view.getMonth()?' out':'') + (s===todayIso?' today':'') + (s===selIso?' sel':'') + (read?' read':'') + (ev.length?' has-ev':'');
+        var lab = d.getMonth()+1 + '월 ' + d.getDate() + '일' + (ed?', 브리핑 회차':'') + (read?', 정기 열람일':'') + (ev.length?', 일정 ' + ev.length + '건':'');
+        h += '<button type="button" class="' + c + '" data-d="' + s + '" aria-label="' + lab + '"><span class="cal-d">' + d.getDate() + '</span>';
+        if (ed) h += '<span class="cal-ed' + (s===D.current?' cur':'') + '">' + (s===D.current?'현재':'회차') + '</span><span class="cal-ret ' + cls(ed.ret.BTC) + '">BTC ' + fmtPct(ed.ret.BTC).replace('▲ ','').replace('▼ ','') + '</span>';
+        else if (read) h += '<span class="cal-rd">열람 07:00</span>';
+        ev.slice(0,2).forEach(function(e){ h += '<span class="cal-ev">' + e.label + '</span>'; });
+        h += '</button>';
+      }
+      grid.innerHTML = h;
+    }
+    function show(s){
+      selIso = s; render();
+      var p = s.split('-'), d = new Date(+p[0], +p[1]-1, +p[2]), ed = eds[s], ev = evs[s] || [];
+      var h = '<h4>' + (+p[1]) + '월 ' + (+p[2]) + '일 (' + W[d.getDay()] + ')</h4>';
+      if (ed){
+        h += '<p><b>브리핑 회차</b> · 분석 기간 ' + ed.period + ' · 발행 ' + ed.published + '</p><div class="rets">';
+        ['BTC','ETH','XRP','DOGE'].forEach(function(c){ h += '<div><b>' + c + '</b><br><span class="' + cls(ed.ret[c]) + '">' + fmtPct(ed.ret[c]) + '</span></div>'; });
+        h += '</div>' + (s === D.current ? '<p class="small">지금 보고 있는 회차임</p>' : '<a class="open-ed" href="' + href(ed.file) + '">이 회차 열기 →</a>');
+      }
+      if (D.reading.weekdays.indexOf(d.getDay()) !== -1) h += '<p class="small">정기 열람일 (' + D.reading.time + ' KST)' + (ed ? '' : (s > D.latest ? ' · 아직 발행 전' : ' · 이 날짜 기준 회차 없음')) + '</p>';
+      if (ev.length){ h += '<ul>'; ev.forEach(function(e){ h += '<li>' + (e.time ? '<b>' + e.time + '</b> ' : '') + e.label + ' <span class="small">(' + e.status + ' · ' + e.source + ')</span></li>'; }); h += '</ul>'; }
+      if (!ed && !ev.length && D.reading.weekdays.indexOf(d.getDay()) === -1) h += '<p class="small">이 날짜에는 회차나 등록된 일정이 없음</p>';
+      detail.innerHTML = h;
+    }
+    grid.addEventListener('click', function(e){ var b = e.target.closest('.cal-cell'); if (b) show(b.getAttribute('data-d')); });
+    document.getElementById('cal-prev').addEventListener('click', function(){ view = new Date(view.getFullYear(), view.getMonth()-1, 1); render(); });
+    document.getElementById('cal-next').addEventListener('click', function(){ view = new Date(view.getFullYear(), view.getMonth()+1, 1); render(); });
+    show(D.current);
+  })();
   var note = document.getElementById('print-note');
   var framed = false; try{ framed = window.self !== window.top; }catch(e){ framed = true; }
   document.getElementById('btn-print').addEventListener('click', function(){
