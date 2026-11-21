@@ -138,8 +138,23 @@ class KRXCollector:
                 "listed_shares": df["상장주식수"].astype("Int64"),
                 "source_market_cap": df["시가총액"].astype(float), "volume": df["거래량"],
             })
+            out = out[out["listed_shares"].fillna(0) > 0].reset_index(drop=True)
+            # 소속부(관리종목·SPAC 등)·ISIN 은 KRX 스냅샷에서 보완하고, 같은 날 종가를 교차검증함
+            msg = ""
+            try:
+                mdf, _ = self._mirror("krx", price_date)
+                if mdf is not None:
+                    m = self._normalize_mirror(mdf)[["stock_code", "isin", "dept", "close"]]
+                    out = out.drop(columns=["isin", "dept"]).merge(
+                        m.rename(columns={"close": "mirror_close"}), on="stock_code", how="left")
+                    both = out["mirror_close"].notna()
+                    diff = int((out.loc[both, "close"] != out.loc[both, "mirror_close"]).sum())
+                    msg = f"KRX 스냅샷 교차검증: {int(both.sum())}종목 중 종가 불일치 {diff}건"
+                    out = out.drop(columns=["mirror_close"])
+            except Exception as e:  # noqa: BLE001
+                msg = f"KRX 스냅샷 보완 실패(소속부 미확인): {e}"
             return Snapshot(out, price_date, price_date, "KRX_OFFICIAL",
-                            f"pykrx.get_market_cap({ymd})", DataStatus.VERIFIED, collected_at)
+                            f"pykrx.get_market_cap({ymd})", DataStatus.VERIFIED, collected_at, msg)
         except Exception as e:  # noqa: BLE001
             return Snapshot(None, price_date, None, "KRX_OFFICIAL", "pykrx", DataStatus.FAILED,
                             collected_at, str(e))

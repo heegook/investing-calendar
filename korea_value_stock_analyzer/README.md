@@ -22,6 +22,8 @@ source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+Windows 에서는 한글 출력 오류 방지를 위해 실행 전 PowerShell 에서 `$env:PYTHONUTF8=1` 을 설정함
+
 ## 2. API 키 설정
 
 ```bash
@@ -50,6 +52,9 @@ python -m scheduler.daily_scheduler --run-now
 python -m scheduler.daily_scheduler --run-now --codes 005930,000660
 python -m scheduler.daily_scheduler --run-now --limit 20
 python -m scheduler.daily_scheduler --run-now --price-date 2026-11-20
+
+# 실데이터 검증 리포트(사용 계정·접수번호·검증 결과) → logs/verify_<run_id>.txt
+python -m scheduler.daily_scheduler --run-now --codes 005930,009150,267260 --dump
 
 # 테스트
 python -m pytest -q

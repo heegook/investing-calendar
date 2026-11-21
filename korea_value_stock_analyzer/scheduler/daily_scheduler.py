@@ -31,7 +31,8 @@ from core.trading_calendar import analysis_price_date, now_kst
 from database.db_manager import DBManager
 
 
-def run_daily(codes: list[str] | None = None, limit: int | None = None, price_date: date | None = None) -> dict:
+def run_daily(codes: list[str] | None = None, limit: int | None = None, price_date: date | None = None,
+              dump: bool = False) -> dict:
     log = config.setup_logging("daily")
     db = DBManager()
     started = now_kst()
@@ -101,6 +102,11 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
         stages["not_implemented"] = ["STEP 5 적정주가", "STEP 6 스크리닝·선정", "STEP 7 리스크",
                                      "STEP 10 보고서", "STEP 11 07:30 자동 실행"]
         _print_summary(results, summary)
+        if dump:
+            path = config.path("log_dir") / f"verify_{run_id}.txt"
+            path.write_text(verification_report(results, pr.checks, run_id), encoding="utf-8")
+            summary["verification_report"] = str(path)
+            print(f"\n검증 리포트 저장: {path}")
     except Exception as e:  # noqa: BLE001
         status = "FAILED"
         log.error("일일 분석 실패: %s\n%s", e, traceback.format_exc())
@@ -108,6 +114,50 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
         return {"run_id": run_id, "status": status, "error": str(e), "stages": stages}
     db.finish_run(run_id, status, stages, now_kst().isoformat(timespec="seconds"), None, summary)
     return {"run_id": run_id, "status": status, "stages": stages, "summary": summary}
+
+
+def _fmt(v) -> str:
+    if v is None:
+        return "null"
+    return f"{v:,.0f}" if abs(v) >= 1000 else f"{v:,.4f}"
+
+
+def verification_report(results, price_checks: dict, run_id: str) -> str:
+    """실데이터 검증용 상세 리포트 (사용 계정·원천 접수번호·검증 결과). 비밀값은 포함하지 않음"""
+    L = [f"# 검증 리포트 run_id={run_id}", "## 주가 수집", json.dumps(price_checks, ensure_ascii=False, indent=1)]
+    for r, cf, rr in results:
+        L += ["", "=" * 100, f"## {r.stock_code} {r.name} | 재무상태={cf.status} {cf.message}",
+              f"종가 {r.close:,.0f} / 상장주식수 {int(r.listed_shares):,} / 시총 {r.market_cap:,.0f} / 결산월 {r.settle_month}"]
+        L.append("### 사용 보고서")
+        L += [f"- {x['rcept_no']} {x['report_nm']} period={x['period']} reprt={x['reprt_code']} "
+              f"bsns_year={x['bsns_year']} fs={x['fs_div']}" for x in cf.reports]
+        L.append(f"### 주식총수(DART): {cf.shares}")
+        L.append("### 검증")
+        L += [f"- [{v['result']}] {v['check']}: {v['detail']}" for v in cf.validations]
+        L.append("### 연간(3개년)")
+        for per in cf.annual_periods:
+            for k, v in cf.annual[per].items():
+                L.append(f"- {per} {k} = {_fmt(v.value)} [{v.status.value}] "
+                         f"{v.source.detail if v.source else ''} {'; '.join(v.notes)}")
+        L.append(f"### 최근 재무상태표 ({cf.balance_period})")
+        for k, v in cf.balance.items():
+            L.append(f"- {k} = {_fmt(v.value)} [{v.status.value}] {v.source.detail if v.source else ''} "
+                     f"{'; '.join(v.notes)}")
+        ia = cf.investment_assets
+        L.append(f"### 투자자산 합계 = {_fmt(ia.value) if ia else 'null'}")
+        L += [f"- {'포함' if i['included'] else '제외'} {i['category']} | {i['account_id']} | {i['account_nm']} | "
+              f"{_fmt(i['amount'])} {i['note']}" for i in cf.investment_breakdown]
+        L.append("### 최근 4개 분기")
+        for q in cf.quarters:
+            L.append(f"- {q['label']}: " + ", ".join(f"{k}={_fmt(q[k].value)}" for k in
+                                                       ("revenue", "operating_income", "net_income_parent", "eps")))
+        L.append(f"### TTM: {cf.ttm_basis}")
+        L += [f"- {k} = {_fmt(v.value)} [{v.status.value}] {'; '.join(v.notes)}" for k, v in cf.ttm.items()]
+        L.append("### 10개 지표")
+        for key, m in rr.metrics.items():
+            L.append(f"- {m.name}: {m.display} | {m.check.value if m.check else '-'} | {m.status.value} | "
+                     f"{m.reason.value if m.reason else ''} | {' / '.join(n for n in m.notes if n)}")
+    return "\n".join(L)
 
 
 def _print_summary(results, summary) -> None:
@@ -131,12 +181,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--codes", help="쉼표로 구분한 종목코드만 실행(검증용)")
     ap.add_argument("--limit", type=int, help="대상 종목 수 제한(검증용)")
     ap.add_argument("--price-date", help="주가 기준일 강제 지정 YYYY-MM-DD (재현용)")
+    ap.add_argument("--dump", action="store_true", help="logs/verify_<run_id>.txt 상세 검증 리포트 저장")
     a = ap.parse_args(argv)
     if not a.run_now:
         print("STEP 11(07:30 자동 실행)은 아직 구현 전임. --run-now 로 1회 실행 가능함")
         return 2
     res = run_daily(a.codes.split(",") if a.codes else None, a.limit,
-                    date.fromisoformat(a.price_date) if a.price_date else None)
+                    date.fromisoformat(a.price_date) if a.price_date else None, a.dump)
     return 0 if res["status"] in ("SUCCESS", "PARTIAL") else 1
 
 
