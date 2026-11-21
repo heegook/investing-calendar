@@ -208,6 +208,8 @@ class FinancialAnalyzer:
 
     def _value(self, rep: ReportData, spec: AccountSpec, column: str) -> Value:
         row, notes = self.find_account(rep.rows, spec)
+        if row is None and spec.key == "eps":
+            return self._eps_from_components(rep, column)
         if row is None:
             return Value(None, DataStatus.UNVERIFIED, reason=Reason.ACCOUNT_NOT_FOUND,
                          notes=[f"{spec.label} 계정 미확인({rep.report_nm})"])
@@ -220,6 +222,27 @@ class FinancialAnalyzer:
         if amt is None:
             return Value(None, DataStatus.UNVERIFIED, src, Reason.ACCOUNT_NOT_FOUND, [f"{column} 값 없음"] + notes)
         return Value(amt, DataStatus.VERIFIED if not notes else DataStatus.PARTIAL, src, notes=notes)
+
+    def _eps_from_components(self, rep: ReportData, column: str) -> Value:
+        """기본주당이익 합계 행이 없고 계속영업·중단영업 기본주당이익만 공시된 경우 합산(PARTIAL)
+
+        중단영업 행이 없거나 공란이면 계속영업 값만 사용하고 그 사실을 표시함
+        """
+        rows = [r for r in rep.rows if r.get("sj_div") in IS_SJ]
+        cont = next((r for r in rows if r.get("account_id") == "ifrs-full_BasicEarningsLossPerShareFromContinuingOperations"
+                     or re.search(r"^계속영업(기본)?주당(순)?(이익|손익|손실)", _norm(r.get("account_nm")))), None)
+        if cont is None or parse_amount(cont.get(column)) is None:
+            return Value(None, DataStatus.UNVERIFIED, reason=Reason.ACCOUNT_NOT_FOUND,
+                         notes=[f"기본주당이익 계정 미확인({rep.report_nm})"])
+        disc = next((r for r in rows if r.get("account_id") == "ifrs-full_BasicEarningsLossPerShareFromDiscontinuedOperations"
+                     or re.search(r"^중단영업(기본)?주당(순)?(이익|손익|손실)", _norm(r.get("account_nm")))), None)
+        c = parse_amount(cont.get(column))
+        d = parse_amount(disc.get(column)) if disc else None
+        src = SourceRef("DART_OPENAPI", rep.rcept_no, rep.period, rep.collected_at,
+                        f"{rep.report_nm} | 계속영업+중단영업 기본주당이익 | {column}")
+        note = (f"기본주당이익 합계 행 미공시 → 계속영업 {c:,.0f}원 + 중단영업 {d:,.0f}원" if d is not None else
+                f"기본주당이익 합계 행 미공시 → 계속영업 {c:,.0f}원 사용(중단영업 주당이익 공란)")
+        return Value(c + (d or 0.0), DataStatus.PARTIAL, src, notes=[note])
 
     # ---------------- 투자자산 ----------------
     @staticmethod

@@ -86,21 +86,26 @@ class FinancialPipeline:
                         shares["note"] = (f"최신 보고서({ordered[0].period})는 합계 행만 공시, "
                                           f"{rep.period} 보고서에서 우선주 등 종류주식 0주 확인 → 합계를 보통주로 사용")
                     elif idx > 0:
-                        # 최신 보고서의 자기주식 취득·처분 현황(보통주 총계 기말수량)으로 보완
+                        # DART 3분기 자기주식 현황은 '-' 자리표시 행만 제공되므로(실데이터 확인),
+                        # 직전 기준일 이후 자기주식 관련 공시가 없는지 확인하여 변동 여부를 검증함
                         top = ordered[0]
-                        tr = self.dart.treasury_period_end(corp, top.bsns_year, top.reprt_code)
+                        try:
+                            base = date.fromisoformat(str(shares.get("stlm_dt")))
+                        except (TypeError, ValueError):
+                            base = None
+                        ev = self.dart.treasury_events(corp, base, ref) if base else None
                         diags.append(self.dart.last_stock_diag)
                         same_issued = listed_shares is not None and shares.get("issued_shares") is not None and \
                             abs(listed_shares - shares["issued_shares"]) < 1
-                        if tr is not None and tr["treasury_shares"] is not None and same_issued:
-                            shares["treasury_shares"] = tr["treasury_shares"]
-                            shares["outstanding_shares"] = shares["issued_shares"] - tr["treasury_shares"]
-                            shares["stlm_dt"] = tr.get("stlm_dt") or shares.get("stlm_dt")
-                            shares["note"] = (f"자기주식: {top.period} 자기주식 취득·처분 현황 보통주 기말수량 / "
-                                              f"발행주식: {rep.period} 주식총수(현재 KRX 상장주식수와 동일 확인)")
+                        if ev is not None and not ev and same_issued:
+                            shares["note"] = (f"자기주식: {rep.period} 기준 {shares.get('treasury_shares'):,.0f}주, "
+                                              f"{base} 이후 자기주식 취득·처분·소각 관련 공시 없음 확인 / "
+                                              f"발행주식수 = 현재 KRX 상장주식수 확인 (최신 보고서 {top.period}는 보통주 행 미공시)")
                         else:
+                            why = ("자기주식 관련 공시 " + ", ".join(f"{e['rcept_dt']} {e['report_nm']}" for e in ev[:3])
+                                   if ev else "자기주식 공시 조회 실패" if ev is None else "발행주식수가 현재 상장주식수와 다름")
                             shares["note"] = (shares.get("note", "") + f" 최신 보고서({top.period})는 보통주 행 미공시 → "
-                                              f"{rep.period} 기준 자기주식수 사용(이후 변동 미반영)").strip()
+                                              f"{rep.period} 기준 자기주식수 사용(이후 변동 미반영: {why})").strip()
                     break
             shares["_diag"] = diags
             if shares.get("outstanding_shares") is not None:

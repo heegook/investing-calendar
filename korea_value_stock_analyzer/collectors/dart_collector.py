@@ -309,6 +309,28 @@ class DartCollector:
                 return out
         return None
 
+    def treasury_events(self, corp_code: str, after: date, until: date) -> list[dict[str, str]] | None:
+        """기준일 이후 자기주식 취득·처분·소각·신탁 관련 주요사항보고서 등 공시 목록 (None = 조회 실패)"""
+        out, page = [], 1
+        while True:
+            j = self._request("list.json", {"corp_code": corp_code, "bgn_de": after.strftime("%Y%m%d"),
+                                            "end_de": until.strftime("%Y%m%d"), "page_no": page, "page_count": 100})
+            if j.get("status") == "013":
+                break
+            if j.get("status") != "000":
+                return None
+            for it in j.get("list", []):
+                nm = re.sub(r"\s+", "", it.get("report_nm") or "")
+                if re.search(r"자기주식|자사주|주식소각|이익소각", nm):
+                    out.append({"rcept_no": it["rcept_no"], "rcept_dt": it["rcept_dt"], "report_nm": it["report_nm"].strip()})
+            if page >= int(j.get("total_page", 1)):
+                break
+            page += 1
+        self._save_raw(f"{corp_code}/treasury_events_{after:%Y%m%d}_{until:%Y%m%d}.json", out)
+        self.last_stock_diag = f"자기주식 관련 공시({after}~{until}) {len(out)}건: " + "; ".join(
+            f"{e['rcept_dt']} {e['report_nm']}" for e in out[:5])
+        return out
+
     def treasury_period_end(self, corp_code: str, bsns_year: int, reprt_code: str) -> dict[str, Any] | None:
         """자기주식 취득 및 처분 현황(tesstkAcqsDspsSttus)의 '총계' 행 보통주 기말수량"""
         j = self._request("tesstkAcqsDspsSttus.json", {"corp_code": corp_code, "bsns_year": bsns_year,

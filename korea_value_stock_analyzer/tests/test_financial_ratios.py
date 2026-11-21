@@ -228,3 +228,21 @@ def test_share_class_parsing():
 def test_account_name_normalization():
     from analyzers.financial_analyzer import _norm
     assert _norm("Ⅰ. 매출액") == "매출액" and _norm("1. 영업이익") == "영업이익" and _norm("(1) 자본금") == "자본금"
+
+
+def test_eps_from_continuing_operations_when_total_missing():
+    """효성 사례: 사업보고서에 계속영업·중단영업 주당이익만 공시"""
+    reps = reports()
+    for r in reps:
+        if r.reprt_code == "11011":
+            for x in r.rows:
+                if x["account_nm"] == "기본주당이익":
+                    x["account_id"] = "ifrs-full_BasicEarningsLossPerShareFromContinuingOperations"
+                    x["account_nm"] = "계속영업기본주당이익(손실)"
+            r.rows.append({"sj_div": "IS", "account_id": "ifrs-full_BasicEarningsLossPerShareFromDiscontinuedOperations",
+                           "account_nm": "중단영업기본주당이익(손실)", "ord": "13", "currency": "KRW",
+                           "thstrm_amount": None})
+    cf = FinancialAnalyzer().analyze("TEST01", reps, SHARES)
+    v = cf.annual["2025-12"]["eps"]
+    assert v.value == pytest.approx(800) and v.status == DataStatus.PARTIAL
+    assert cf.ttm["eps"].value == pytest.approx(900)
