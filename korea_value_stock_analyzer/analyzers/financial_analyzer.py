@@ -283,6 +283,15 @@ class FinancialAnalyzer:
                 continue
             items.append({"category": cat, "account_id": r.get("account_id"), "account_nm": r.get("account_nm"),
                           "ord": r.get("ord"), "amount": amt, "included": True, "note": ""})
+        # 설정: 기타비유동금융자산 포함 여부
+        inc_other = config.settings().get("valuation", {}).get("investment_assets", {}) \
+            .get("include_other_noncurrent_financial_assets", True)
+        if not inc_other:
+            for it in items:
+                if it["account_id"] == "ifrs-full_OtherNoncurrentFinancialAssets" or \
+                        re.search(r"^(기타)?(비유동|장기)?기타?금융자산$", _norm(it["account_nm"])):
+                    it["included"] = False
+                    it["note"] = "설정에 따라 기타비유동금융자산 제외"
         # 소계 행 중복 제거: 집합형 계정명(장기투자자산 등) 행의 금액이 바로 뒤 연속 2개 이상 항목 합과 같으면 소계로 보고 제외
         for i, it in enumerate(items):
             if not (re.search(INVESTMENT_AGGREGATE, _norm(it["account_nm"]))

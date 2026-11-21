@@ -42,6 +42,7 @@ CHECK_LABEL = {
 class RatioResult:
     stock_code: str
     metrics: dict[str, Metric] = field(default_factory=dict)
+    valuation: Any = None   # STEP 5 ValuationResult
 
     @property
     def checklist(self) -> list[Metric]:

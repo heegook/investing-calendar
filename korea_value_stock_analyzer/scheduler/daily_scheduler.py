@@ -23,6 +23,7 @@ import pandas as pd
 
 from analyzers.financial_pipeline import FinancialPipeline
 from analyzers.ratio_calculator import CHECK_LABEL, PriceInfo, RatioCalculator
+from analyzers.valuation_engine import ValuationEngine
 from collectors.krx_collector import apply_size_filter
 from collectors.price_collector import PriceCollector
 from core import config
@@ -69,6 +70,8 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
         # ---------------- 2~3. 재무제표 + 비율 ----------------
         fp = FinancialPipeline(db)
         calc = RatioCalculator()
+        veng = ValuationEngine()
+        val_rows = []
         fin_status: dict[str, int] = {}
         ratio_rows, results = [], []
         for i, r in enumerate(target.itertuples(), 1):
@@ -79,7 +82,17 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
                               int(r.listed_shares), float(r.market_cap), pr.snapshot.source,
                               pr.snapshot.source_ref, DataStatus(r.status), pr.snapshot.collected_at)
             rr = calc.calculate(cf, price)
+            vr = veng.calculate(cf, price, name=r.name,
+                                industry=r.industry if isinstance(r.industry, str) else None)
+            rr.valuation = vr
             results.append((r, cf, rr))
+            val_rows.append({
+                "run_id": run_id, "analysis_date": started.date().isoformat(), "stock_code": r.stock_code,
+                "fair_value": vr.fair_value, "current_price": vr.current_price,
+                "safety_margin_pct": vr.safety_margin_pct, "discount_pct": vr.discount_pct,
+                "upside_pct": vr.upside_pct, "price_20pct_off": vr.price_20pct_off,
+                "price_30pct_off": vr.price_30pct_off, "status": vr.status.value,
+                "caution": " / ".join(vr.cautions) or None, "metadata_json": vr.to_dict()})
             for key, mt in rr.metrics.items():
                 ratio_rows.append({
                     "run_id": run_id, "analysis_date": started.date().isoformat(), "stock_code": r.stock_code,
@@ -92,6 +105,8 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
             if fp.dart.fatal:
                 log.error("DART 치명 오류로 이후 수집 중단: %s", fp.dart.fatal)
         db.upsert("financial_ratios", ratio_rows)
+        db.upsert("valuation_results", val_rows)
+        stages["valuation"] = {"computed": sum(v["fair_value"] is not None for v in val_rows), "total": len(val_rows)}
         stages["financials"] = {"status_counts": fin_status, "dart_calls": fp.dart.call_count,
                                 "dart_fatal": str(fp.dart.fatal) if fp.dart.fatal else None}
         stages["ratios"] = {"companies": len(results), "metric_rows": len(ratio_rows)}
@@ -99,7 +114,7 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
         summary["all_10_pass"] = [r.stock_code for r, cf, rr in results if rr.all_pass]
         if fin_status.get("NO_API_KEY") or fin_status.get("FAILED"):
             status = "PARTIAL"
-        stages["not_implemented"] = ["STEP 5 적정주가", "STEP 6 스크리닝·선정", "STEP 7 리스크",
+        stages["not_implemented"] = ["STEP 6 스크리닝·선정", "STEP 7 리스크",
                                      "STEP 10 보고서", "STEP 11 07:30 자동 실행"]
         _print_summary(results, summary)
         if dump:
@@ -158,6 +173,20 @@ def verification_report(results, price_checks: dict, run_id: str) -> str:
                                                        ("revenue", "operating_income", "net_income_parent", "eps")))
         L.append(f"### TTM: {cf.ttm_basis}")
         L += [f"- {k} = {_fmt(v.value)} [{v.status.value}] {'; '.join(v.notes)}" for k, v in cf.ttm.items()]
+        vr = getattr(rr, "valuation", None)
+        if vr is not None:
+            L.append(f"### 적정주가 [{vr.status.value}] 공식: {vr.formula}")
+            for i in vr.inputs:
+                L.append(f"- 입력 {i['item']} = {_fmt(i['value'])} {i['unit']} | {i['basis']} | {i['status']} | {i['source']}")
+            for st in vr.steps:
+                L.append(f"- {st['step']}: {st.get('formula', '')} = {_fmt(st['result']) if isinstance(st['result'], (int, float)) else st['result']}")
+            if vr.fair_value is not None:
+                L.append(f"- 적정주가 {vr.fair_value:,.0f}원 / 현재가 {vr.current_price:,.0f}원 / 안전마진율 "
+                         f"{vr.safety_margin_pct:,.1f}% / 할인율 {'-' if vr.discount_pct is None else f'{vr.discount_pct:,.1f}%'}"
+                         f" / 20% 할인가 {_fmt(vr.price_20pct_off)} / 30% 할인가 {_fmt(vr.price_30pct_off)}")
+            L += [f"- [{c['result']}] {c['check']}: {c['detail']}" for c in vr.validations]
+            L += [f"- 주의: {c}" for c in vr.cautions]
+            L.append(f"- ※ {vr.disclaimer}")
         L.append("### 10개 지표")
         for key, m in rr.metrics.items():
             L.append(f"- {m.name}: {m.display} | {m.check.value if m.check else '-'} | {m.status.value} | "
@@ -173,6 +202,13 @@ def _print_summary(results, summary) -> None:
             mark = {"통과": "O", "미통과": "X", "확인 불가": "?"}[m.check.value]
             cells.append(f"{CHECK_LABEL[_key(m.name)]}={m.display}{mark}")
         print(f"{r.stock_code} {r.name} [{cf.status}] 통과 {rr.pass_count}/10 확인불가 {rr.na_count} | " + ", ".join(cells))
+        vr = getattr(rr, "valuation", None)
+        if vr is not None:
+            if vr.fair_value is not None:
+                print(f"    적정주가 {vr.fair_value:,.0f}원 (현재가 {vr.current_price:,.0f}원, 안전마진율 "
+                      f"{vr.safety_margin_pct:+.1f}%) [{vr.status.value}]")
+            else:
+                print(f"    적정주가 산출 불가: {vr.steps[0]['result'] if vr.steps else vr.reason}")
         if len(results) <= 5:
             for v in cf.validations:
                 print(f"    [{v['result']}] {v['check']}: {v['detail']}")
