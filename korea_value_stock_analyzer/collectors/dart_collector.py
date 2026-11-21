@@ -300,42 +300,65 @@ class DartCollector:
         if j.get("status") != "000":
             return None
         for it in j.get("list", []):
-            se = re.sub(r"\s+", "", it.get("se") or "")
-            if "보통" in se:
-                out = {
-                    "issued_shares": parse_amount(it.get("istc_totqy")),
-                    "treasury_shares": parse_amount(it.get("tesstk_co")),
-                    "outstanding_shares": parse_amount(it.get("distb_stock_co")),
-                    "stlm_dt": it.get("stlm_dt"), "rcept_no": it.get("rcept_no"),
-                }
-                # 유통주식수가 비어 있고 발행·자기주식수가 확인되면 차감하여 산출(산출 근거 표시)
-                if out["outstanding_shares"] is None and out["issued_shares"] is not None \
-                        and out["treasury_shares"] is not None:
-                    out["outstanding_shares"] = out["issued_shares"] - out["treasury_shares"]
-                    out["note"] = "유통주식수 = 발행주식총수 − 자기주식수 (원천 유통주식수 공란)"
-                # 우선주 등 종류주식 유통주식수 합계(EPS 교차검증·BPS 주석용)
+            if is_common_class(it.get("se")):
+                out = share_row(it)
                 others = [parse_amount(x.get("distb_stock_co")) or 0 for x in j.get("list", [])
-                          if not any(k in re.sub(r"\s+", "", x.get("se") or "") for k in ("보통", "합계", "비고"))]
+                          if not is_common_class(x.get("se")) and not _is_total_or_note(x.get("se"))]
                 out["other_class_outstanding"] = float(sum(others))
                 self.last_stock_diag += f" → 사용: {it}"
                 return out
         return None
+
+    def treasury_period_end(self, corp_code: str, bsns_year: int, reprt_code: str) -> dict[str, Any] | None:
+        """자기주식 취득 및 처분 현황(tesstkAcqsDspsSttus)의 '총계' 행 보통주 기말수량"""
+        j = self._request("tesstkAcqsDspsSttus.json", {"corp_code": corp_code, "bsns_year": bsns_year,
+                                                        "reprt_code": reprt_code})
+        self._save_raw(f"{corp_code}/tesstk_{bsns_year}_{reprt_code}.json", j)
+        rows = j.get("list", []) if j.get("status") == "000" else []
+        self.last_stock_diag = (f"tesstkAcqsDspsSttus({bsns_year},{reprt_code}) status={j.get('status')} "
+                                f"rows={len(rows)}")
+        tot = [r for r in rows if "총계" in re.sub(r"\s+", "", (r.get("acqs_mth1") or "") + (r.get("acqs_mth2") or ""))
+               and is_common_class(r.get("stock_knd"))]
+        if len(tot) != 1:
+            self.last_stock_diag += f" 보통주 총계 행 {len(tot)}개 → 사용 안 함"
+            return None
+        q = parse_amount(tot[0].get("trmend_qy"))
+        if q is None and (tot[0].get("trmend_qy") or "").strip() == "-":
+            q = 0.0
+        self.last_stock_diag += f" → 보통주 기말 자기주식 {q}"
+        return {"treasury_shares": q, "stlm_dt": tot[0].get("stlm_dt"), "rcept_no": tot[0].get("rcept_no")}
+
+
+def is_common_class(se: str | None) -> bool:
+    t = re.sub(r"\s+", "", se or "")
+    return "보통" in t or ("의결권있" in t and "없" not in t.replace("있는", ""))
+
+
+def _is_total_or_note(se: str | None) -> bool:
+    t = re.sub(r"\s+", "", se or "")
+    return "합계" in t or "비고" in t or "총계" in t
 
 
 def share_row(it: dict[str, Any]) -> dict[str, Any]:
     out = {"issued_shares": parse_amount(it.get("istc_totqy")), "treasury_shares": parse_amount(it.get("tesstk_co")),
            "outstanding_shares": parse_amount(it.get("distb_stock_co")), "stlm_dt": it.get("stlm_dt"),
            "rcept_no": it.get("rcept_no")}
+    raw_t = (it.get("tesstk_co") or "").strip()
+    if out["treasury_shares"] is None and raw_t == "-" and out["issued_shares"] is not None:
+        # DART 는 0 을 '-' 로 표기함: 발행 = 유통 이 확인될 때만 0 으로 해석
+        if out["outstanding_shares"] is None or abs(out["outstanding_shares"] - out["issued_shares"]) < 1:
+            out["treasury_shares"] = 0.0
+            out["note"] = "자기주식 '-' 표기 → 발행주식수 = 유통주식수 확인되어 0주로 해석"
     if out["outstanding_shares"] is None and None not in (out["issued_shares"], out["treasury_shares"]):
         out["outstanding_shares"] = out["issued_shares"] - out["treasury_shares"]
+        out["note"] = (out.get("note", "") + " 유통주식수 = 발행주식총수 − 자기주식수(원천 공란)").strip()
     return out
 
 
 def only_common_class(rows: list[dict[str, Any]]) -> bool:
     """보통주 외 종류주식(우선주 등) 발행주식수가 모두 0/공란이면 True"""
     for it in rows:
-        se = re.sub(r"\s+", "", it.get("se") or "")
-        if any(k in se for k in ("보통", "합계", "비고")):
+        if is_common_class(it.get("se")) or _is_total_or_note(it.get("se")):
             continue
         if (parse_amount(it.get("istc_totqy")) or 0) > 0:
             return False

@@ -59,8 +59,11 @@ def test_missing_inputs_no_value():
 
 
 def test_holding_and_financial_caution(cf):
+    # 지주회사(KSIC 상 '기타 금융업')는 지주 주의만, 금융업 주의는 붙이지 않음
     v = ValuationEngine().calculate(cf, price(), name="테스트홀딩스", industry="기타 금융업")
-    assert any("금융업" in c for c in v.cautions) and any("지주회사" in c for c in v.cautions)
+    assert any("지주회사" in c for c in v.cautions) and not any("금융업 추정" in c for c in v.cautions)
+    v2 = ValuationEngine().calculate(cf, price(), name="테스트은행", industry="은행 및 저축기관")
+    assert any("금융업 추정" in c for c in v2.cautions)
 
 
 def test_negative_fair_value_no_discount_prices():

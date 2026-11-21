@@ -36,18 +36,20 @@ class AccountSpec:
 
 
 ACCOUNTS: dict[str, AccountSpec] = {a.key: a for a in [
-    AccountSpec("revenue", "매출액", IS_SJ, ("ifrs-full_Revenue", "ifrs_Revenue"),
-                r"^(매출액|매출|영업수익|수익\(매출액\)|매출액\(영업수익\))$"),
+    AccountSpec("revenue", "매출액", IS_SJ, ("ifrs-full_Revenue", "ifrs_Revenue",
+                                          "ifrs-full_RevenueFromContractsWithCustomers"),
+                r"^(매출액|매출|영업수익|수익|순매출액|매출액및지분법손익)(\(.*\))?$"),
     AccountSpec("operating_income", "영업이익", IS_SJ, ("dart_OperatingIncomeLoss",),
-                r"^(영업이익|영업이익\(손실\)|영업손익|영업손실)$"),
+                r"^(영업이익|영업손익|영업손실)(\(손실\)|\(손익\))?$"),
     AccountSpec("net_income", "연결 당기순이익", IS_SJ, ("ifrs-full_ProfitLoss", "ifrs_ProfitLoss"),
                 r"^(당기순이익|당기순이익\(손실\)|당기순손익|분기순이익|분기순이익\(손실\)|반기순이익|반기순이익\(손실\)|연결당기순이익)$"),
     AccountSpec("net_income_parent", "지배기업 소유주 귀속 순이익", IS_SJ,
                 ("ifrs-full_ProfitLossAttributableToOwnersOfParent", "ifrs_ProfitLossAttributableToOwnersOfParent"),
                 r"^(지배기업(의)?소유주(지분|에게귀속되는.*)?|지배기업소유주귀속.*|지배주주(지분|순이익)?)$"),
     AccountSpec("eps", "기본주당이익", IS_SJ,
-                ("ifrs-full_BasicEarningsLossPerShare", "ifrs_BasicEarningsLossPerShare"),
-                r"^(기본주당이익|기본주당이익\(손실\)|기본주당순이익|기본주당순이익\(손실\)|기본및희석주당이익.*)$"),
+                ("ifrs-full_BasicEarningsLossPerShare", "ifrs_BasicEarningsLossPerShare",
+                 "ifrs-full_BasicAndDilutedEarningsLossPerShare"),
+                r"^(보통주)?(기본|기본및희석|기본및희석)주당(순)?(이익|손익|손실|이익\(손실\)|순이익\(손실\))(\(.*\))?$"),
     AccountSpec("operating_cf", "영업활동현금흐름", ("CF",),
                 ("ifrs-full_CashFlowsFromUsedInOperatingActivities", "ifrs_CashFlowsFromUsedInOperatingActivities"),
                 r"^영업활동(으로인한|으로부터의)?(순)?현금흐름$"),
@@ -71,7 +73,7 @@ ACCOUNTS: dict[str, AccountSpec] = {a.key: a for a in [
                 r"^비지배(주주)?지분(에귀속되는.*|순이익)?$"),
     AccountSpec("issued_capital", "자본금", ("BS",), ("ifrs-full_IssuedCapital", "ifrs_IssuedCapital"), r"^자본금$"),
     # 자본잉여금은 표준계정ID가 회사별로 상이하여 계정명으로만 매칭함
-    AccountSpec("capital_surplus", "자본잉여금", ("BS",), (), r"^자본잉여금$"),
+    AccountSpec("capital_surplus", "자본잉여금", ("BS",), ("dart_CapitalSurplus",), r"^자본잉여금(\(.*\))?$"),
     AccountSpec("share_premium", "주식발행초과금", ("BS",), ("ifrs-full_SharePremium", "ifrs_SharePremium"),
                 r"^주식발행초과금$"),
     AccountSpec("retained_earnings", "이익잉여금", ("BS",), ("ifrs-full_RetainedEarnings", "ifrs_RetainedEarnings"),
@@ -117,7 +119,9 @@ INVESTMENT_EXCLUDE = r"(파생|대여금|보증금|채권|이연법인세|유형
 
 
 def _norm(s: str | None) -> str:
-    return re.sub(r"\s+", "", s or "")
+    """공백 제거 + 앞머리 번호(Ⅰ. / 1. / (1) / 가.) 제거"""
+    t = re.sub(r"\s+", "", s or "")
+    return re.sub(r"^(\(?[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩIVX0-9]{1,4}[.)]|\([0-9]{1,2}\)|[가-하]\.)", "", t)
 
 
 # ----------------------------------------------------------------------
@@ -157,7 +161,8 @@ class CompanyFinancials:
     quarters: list[dict[str, Any]] = field(default_factory=list)           # 최신 → 과거 4개
     ttm: dict[str, Value] = field(default_factory=dict)
     ttm_basis: str = ""
-    latest_q_yoy: dict[str, Any] = field(default_factory=dict)            # 최근 분기 영업이익 전년 동기 대비
+    latest_q_yoy: dict[str, Any] = field(default_factory=dict)
+    restated: bool = False                                                 # 전기 재작성 감지            # 최근 분기 영업이익 전년 동기 대비
     shares: dict[str, Any] = field(default_factory=dict)                   # DART 주식총수
     validations: list[dict[str, Any]] = field(default_factory=list)
     bs_dump: list[tuple] = field(default_factory=list)
@@ -434,20 +439,24 @@ class FinancialAnalyzer:
                 y, m = map(int, rep.period.split("-"))
                 q3_period = _shift_month(rep.period, -3)
                 q3 = by_period.get(q3_period)
+                nxt = by_period.get(_shift_month(rep.period, 9))
                 vals = {}
-                if q3 is not None:
-                    for k in flow:
-                        av = self._value(rep, ACCOUNTS[k], "thstrm_amount")
-                        qv = self._value(q3, ACCOUNTS[k], "thstrm_add_amount")
-                        vals[k] = _diff(av, qv, f"{k}: 연간({rep.rcept_no}) − 3분기 누적({q3.rcept_no})")
-                else:
-                    # 다음 회계연도 3분기 보고서의 전기 누적값으로 대체 가능
-                    nxt = by_period.get(_shift_month(rep.period, 9))
-                    for k in flow:
-                        av = self._value(rep, ACCOUNTS[k], "thstrm_amount")
-                        qv = self._value(nxt, ACCOUNTS[k], "frmtrm_add_amount") if nxt else Value(
-                            None, DataStatus.UNVERIFIED, reason=Reason.STATEMENT_NOT_FOUND, notes=["3분기 누적 미확인"])
-                        vals[k] = _diff(av, qv, f"{k}: 연간 − 전년 3분기 누적(익년 3분기 보고서 전기누적)")
+                for k in flow:
+                    av = self._value(rep, ACCOUNTS[k], "thstrm_amount")
+                    # 우선: 익년 3분기 보고서의 전기 누적(재작성 반영, TTM 산식의 전년동기누적과 동일 기준)
+                    qv_r = self._value(nxt, ACCOUNTS[k], "frmtrm_add_amount") if nxt else None
+                    qv_o = self._value(q3, ACCOUNTS[k], "thstrm_add_amount") if q3 else None
+                    if qv_r is not None and qv_r.value is not None:
+                        v = _diff(av, qv_r, f"{k}: 연간({rep.rcept_no}) − 전년 3분기 누적(익년 3분기 보고서 {nxt.rcept_no} 전기누적)")
+                        if qv_o is not None and qv_o.value is not None and qv_r.value and \
+                                abs(qv_o.value - qv_r.value) / abs(qv_r.value) > 0.005:
+                            v.notes.append(f"전기 재작성 감지: 3분기 누적 최초공시 {qv_o.value:,.0f} → 재작성 {qv_r.value:,.0f}")
+                            cf.restated = True
+                    elif qv_o is not None:
+                        v = _diff(av, qv_o, f"{k}: 연간({rep.rcept_no}) − 3분기 누적({q3.rcept_no})")
+                    else:
+                        v = Value(None, DataStatus.UNVERIFIED, reason=Reason.STATEMENT_NOT_FOUND, notes=["3분기 누적 미확인"])
+                    vals[k] = v
                 if "eps" in vals and vals["eps"].value is not None:
                     vals["eps"].notes.append("4분기 EPS는 연간−누적 차감값(주식수 변동 시 근사치)")
                 quarters.append({"period": rep.period, "label": f"{rep.period} (4Q, 산출)", "derived": True, **vals})

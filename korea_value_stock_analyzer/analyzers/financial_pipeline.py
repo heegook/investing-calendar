@@ -28,7 +28,8 @@ class FinancialPipeline:
             self._corp_map = self.dart.corp_codes()
         return self._corp_map
 
-    def collect(self, stock_code: str, settle_month: int | None, ref: date) -> CompanyFinancials:
+    def collect(self, stock_code: str, settle_month: int | None, ref: date,
+                listed_shares: int | None = None) -> CompanyFinancials:
         if not self.dart.available:
             return CompanyFinancials(stock_code, "NO_API_KEY", "DART_API_KEY 미설정 - 재무제표 수집 불가(값을 채우지 않음)")
         try:
@@ -85,8 +86,21 @@ class FinancialPipeline:
                         shares["note"] = (f"최신 보고서({ordered[0].period})는 합계 행만 공시, "
                                           f"{rep.period} 보고서에서 우선주 등 종류주식 0주 확인 → 합계를 보통주로 사용")
                     elif idx > 0:
-                        shares["note"] = (shares.get("note", "") + f" 최신 보고서({ordered[0].period})는 보통주 행 미공시 → "
-                                          f"{rep.period} 기준 자기주식수 사용(이후 변동 미반영)").strip()
+                        # 최신 보고서의 자기주식 취득·처분 현황(보통주 총계 기말수량)으로 보완
+                        top = ordered[0]
+                        tr = self.dart.treasury_period_end(corp, top.bsns_year, top.reprt_code)
+                        diags.append(self.dart.last_stock_diag)
+                        same_issued = listed_shares is not None and shares.get("issued_shares") is not None and \
+                            abs(listed_shares - shares["issued_shares"]) < 1
+                        if tr is not None and tr["treasury_shares"] is not None and same_issued:
+                            shares["treasury_shares"] = tr["treasury_shares"]
+                            shares["outstanding_shares"] = shares["issued_shares"] - tr["treasury_shares"]
+                            shares["stlm_dt"] = tr.get("stlm_dt") or shares.get("stlm_dt")
+                            shares["note"] = (f"자기주식: {top.period} 자기주식 취득·처분 현황 보통주 기말수량 / "
+                                              f"발행주식: {rep.period} 주식총수(현재 KRX 상장주식수와 동일 확인)")
+                        else:
+                            shares["note"] = (shares.get("note", "") + f" 최신 보고서({top.period})는 보통주 행 미공시 → "
+                                              f"{rep.period} 기준 자기주식수 사용(이후 변동 미반영)").strip()
                     break
             shares["_diag"] = diags
             if shares.get("outstanding_shares") is not None:

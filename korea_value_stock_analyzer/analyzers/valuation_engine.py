@@ -179,10 +179,12 @@ class ValuationEngine:
     def _cautions(self, name: str, industry: str | None) -> list[str]:
         out = []
         ind = industry or ""
-        if re.search(self.vcfg.get("financial_industry_pattern", "$^"), ind):
+        holding = bool(re.search(self.vcfg.get("holding_name_pattern", "$^"), name or "") or
+                       re.search(self.vcfg.get("holding_industry_pattern", "$^"), ind))
+        # KSIC 상 지주회사(64992)는 '기타 금융업'에 속하므로 지주회사로 추정되면 업종만으로 금융업 표시하지 않음
+        if re.search(self.vcfg.get("financial_industry_pattern", "$^"), ind) and not (holding and "기타 금융업" in ind):
             out.append(f"금융업 추정(업종: {ind}) - 유동/비유동 구분이 없는 금융회사 재무제표에 일반 제조업 공식을 적용한 결과이므로 해석 주의")
-        if re.search(self.vcfg.get("holding_name_pattern", "$^"), name or "") or \
-                re.search(self.vcfg.get("holding_industry_pattern", "$^"), ind):
+        if holding:
             out.append("지주회사 추정 - 자회사 가치가 연결로 합산되어 일반 제조업과 동일 공식 적용 결과의 해석 주의")
         if out:
             out.append("※ 지주·금융 여부 정식 판정은 특이사항 분석(STEP 8)에서 근거와 함께 표시 예정")

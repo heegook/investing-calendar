@@ -203,3 +203,28 @@ def test_preferred_shares_used_in_eps_cross_check():
     rr = RatioCalculator().calculate(cf, price())
     assert rr.metrics["per"].inputs["eps_cross_check"] == pytest.approx(90 * E8 / 12_000_000)
     assert any("우선주" in n for n in rr.metrics["pbr"].notes)
+
+
+
+def test_eps_fallback_when_reported_eps_missing():
+    reps = reports()
+    for r in reps:
+        r.rows = [x for x in r.rows if x["account_nm"] != "기본주당이익"]
+    cf = FinancialAnalyzer().analyze("TEST01", reps, SHARES)
+    rr = RatioCalculator().calculate(cf, price())
+    per = rr.metrics["per"]
+    assert per.value == pytest.approx(10_000 / 900)        # 90억 / 1,000만주
+    assert per.status == DataStatus.PARTIAL
+
+
+def test_share_class_parsing():
+    from collectors.dart_collector import is_common_class, share_row
+    assert is_common_class("의결권 있는 주식") and not is_common_class("의결권 없는 주식")
+    assert is_common_class("보통주식") and not is_common_class("우선주")
+    r = share_row({"istc_totqy": "13,000,000", "tesstk_co": "-", "distb_stock_co": "13,000,000"})
+    assert r["treasury_shares"] == 0 and r["outstanding_shares"] == 13_000_000
+
+
+def test_account_name_normalization():
+    from analyzers.financial_analyzer import _norm
+    assert _norm("Ⅰ. 매출액") == "매출액" and _norm("1. 영업이익") == "영업이익" and _norm("(1) 자본금") == "자본금"

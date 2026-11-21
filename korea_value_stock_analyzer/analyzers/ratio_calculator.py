@@ -186,6 +186,14 @@ class RatioCalculator:
         # ---------------- PER ----------------
         f = "전일 종가 / TTM EPS  (TTM EPS = 최근 연간 EPS + 당기 누적 EPS − 전년 동기 누적 EPS)"
         thr = f"< {self.t['per_max']}"
+        other_cls0 = cf.shares.get("other_class_outstanding") or 0
+        if ttm_eps.value is None and ttm_nip.value is not None and outstanding and cf.status == "OK":
+            # 보고 EPS 계정이 없을 때: TTM 지배순이익 / (유통보통주 + 종류주식) 로 산출(PARTIAL)
+            calc_eps = ttm_nip.value / (outstanding + other_cls0)
+            ttm_eps = Value(calc_eps, DataStatus.worst(ttm_nip.status, DataStatus.PARTIAL), ttm_nip.source,
+                            notes=[f"보고 EPS 계정 미확인 → TTM 지배순이익 {ttm_nip.value:,.0f} ÷ 유통주식수 "
+                                   f"{outstanding + other_cls0:,.0f} 로 산출(결산일 기준, 가중평균 아님)"],
+                            inputs={"method": "net_income_parent / outstanding"})
         if price.close and ttm_eps.value is not None:
             eps_adj = ttm_eps.value / split_factor
             notes = list(ttm_eps.notes) + ([split_note] if split_note else []) + [cf.ttm_basis]

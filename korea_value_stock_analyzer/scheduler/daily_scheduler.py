@@ -79,7 +79,7 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
         for i, r in enumerate(target.itertuples(), 1):
             sm = int(r.settle_month) if pd.notna(r.settle_month) else None
             try:
-                cf = fp.collect(r.stock_code, sm, started.date())
+                cf = fp.collect(r.stock_code, sm, started.date(), int(r.listed_shares))
             except Exception as e:  # noqa: BLE001 - 한 종목 오류가 전체 실행을 멈추지 않도록 기록 후 계속
                 log.error("%s 재무 처리 오류: %s\n%s", r.stock_code, e, traceback.format_exc())
                 cf = CompanyFinancials(r.stock_code, "FAILED", f"처리 오류: {e}")
