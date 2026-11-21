@@ -68,10 +68,21 @@ NEWS_TYPE_RULES: list[tuple[str, str]] = [
 # 회사명·업종 용어에 포함된 '화재' 등으로 인한 오탐 제거
 NEWS_TITLE_EXCLUDE = (r"삼성화재|현대해상|DB손해|DB손보|메리츠화재|흥국화재|롯데손해|한화손해|화재보험|해상화재|"
                       r"화재\s*(안심|예방|감지|보험|안전\s*인증)|방화문|소화기|개인정보\s*유출\s*방지")
+# 안전 설비 기부·봉사·캠페인 등 사고가 아닌 기사
+NEWS_NON_EVENT = r"봉사|기부|후원|캠페인|훈련|경보기|차단장치|설치\s*지원|예방\s*교육|출시|인증\s*획득"
 NEWS_URL_EXCLUDE = r"sports|/star|starnews|entertain|/volleyball/|/baseball/|/football/|/golf/"
 
 
+def name_in_title(name: str, title: str) -> bool:
+    """회사명이 다른 회사명의 일부로만 쓰인 경우(예: '케이씨' ⊂ '케이씨코에너지') 제외"""
+    t = title
+    n = re.escape(name)
+    return bool(re.search(rf"(?<![가-힣A-Za-z0-9]){n}(?![가-힣A-Za-z0-9])|{n}(?=(은|는|이|가|의|을|를|에|와|과|도|,|·|\)|'|\"|…|$))", t))
+
+
 def classify_news(title: str) -> str | None:
+    if re.search(NEWS_NON_EVENT, title):
+        return None
     if re.search(NEWS_TITLE_EXCLUDE, title):
         title = re.sub(NEWS_TITLE_EXCLUDE, "", title)
     return next((t for p, t in NEWS_TYPE_RULES if re.search(p, title)), None)
@@ -174,6 +185,8 @@ class RiskAnalyzer:
                         if n["date"] and n["date"] < start.isoformat():
                             continue
                         if re.search(NEWS_URL_EXCLUDE, n["link"] or "", re.I):
+                            continue
+                        if not name_in_title(name, n["title"]):
                             continue
                         etype = classify_news(n["title"])
                         if etype is None:

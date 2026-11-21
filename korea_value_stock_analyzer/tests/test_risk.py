@@ -64,3 +64,11 @@ def test_non_designation_and_resolution():
     assert classify("기타시장안내(상장적격성 실질심사 대상제외 결정)")[1].startswith("무혐의")
     assert classify("조회공시요구(풍문또는보도)(감사의견 비적정설)") == ("회계부정", "의혹 제기")
     assert classify("생산중단(자회사의 주요경영사항)")[0].startswith("생산중단")
+
+
+def test_name_boundary_and_non_event():
+    from analyzers.risk_analyzer import classify_news, name_in_title
+    assert not name_in_title("케이씨", "삼성엔지니어링·태영건설·케이씨코에너지, 지난해 사망재해 발생 1위")
+    assert name_in_title("케이씨", "공정위, 케이씨 하도급 과징금")
+    assert name_in_title("SOOP", "SOOP, 분식회계 의혹 해명")
+    assert classify_news("수산인더스트리, 보령 효자도 가스 누출경보 차단장치 설치 봉사") is None
