@@ -245,6 +245,18 @@ class DartCollector:
                                   collected_at=collected_at)
         first_data: StatementFetch | None = None
         any_ofs = False
+        # 캐시: 같은 접수번호의 원천 응답이 이미 보관되어 있으면 재사용(정정공시는 접수번호가 달라 재수집됨)
+        for by in bsns_year_candidates(py, pm, settle_month):
+            f = self.raw_dir / corp_code / f"fnltt_{by}_{reprt}_CFS.json"
+            if f.exists():
+                try:
+                    j = json.loads(f.read_text(encoding="utf-8"))
+                    rows = j.get("list", [])
+                    if rows and rows[0].get("rcept_no") == report.rcept_no:
+                        return StatementFetch(report, reprt, by, "OK", rows, message="원천 보관본 재사용",
+                                              rcept_no_matched=True, collected_at=collected_at)
+                except (OSError, ValueError):
+                    pass
         for by in bsns_year_candidates(py, pm, settle_month):
             j = self._request("fnlttSinglAcntAll.json", {"corp_code": corp_code, "bsns_year": by,
                                                           "reprt_code": reprt, "fs_div": "CFS"})

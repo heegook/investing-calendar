@@ -87,7 +87,7 @@ def reports(bs_kwargs=None, include_q3_2025=True, latest="3Q"):
     if latest == "3Q":
         out.append(ReportData(
             "20261113000001", "20261113", "분기보고서 (2026.09)", "2026-09", "11014", 2026,
-            is_rows(rev=dict(th=280, add=800, frm_q=260, frm_add=740), op=dict(th=35, add=97, frm_add=88),
+            is_rows(rev=dict(th=280, add=800, frm_q=260, frm_add=740), op=dict(th=35, add=97, frm_q=30, frm_add=88),
                     ni=dict(th=28, add=78, frm_add=66), nip=dict(th=25, add=70, frm_add=60),
                     eps=dict(th=250, add=700, frm_add=600)) + bs_rows(**bs_kwargs)))
     if include_q3_2025:

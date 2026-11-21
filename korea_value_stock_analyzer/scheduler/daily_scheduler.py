@@ -23,7 +23,9 @@ import pandas as pd
 
 from analyzers.financial_pipeline import FinancialPipeline
 from analyzers.ratio_calculator import CHECK_LABEL, PriceInfo, RatioCalculator
+from analyzers.screening_engine import ScreeningEngine, compare_with_previous, to_db_rows
 from analyzers.valuation_engine import ValuationEngine
+from analyzers.financial_analyzer import CompanyFinancials
 from collectors.krx_collector import apply_size_filter
 from collectors.price_collector import PriceCollector
 from core import config
@@ -76,7 +78,11 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
         ratio_rows, results = [], []
         for i, r in enumerate(target.itertuples(), 1):
             sm = int(r.settle_month) if pd.notna(r.settle_month) else None
-            cf = fp.collect(r.stock_code, sm, started.date())
+            try:
+                cf = fp.collect(r.stock_code, sm, started.date())
+            except Exception as e:  # noqa: BLE001 - 한 종목 오류가 전체 실행을 멈추지 않도록 기록 후 계속
+                log.error("%s 재무 처리 오류: %s\n%s", r.stock_code, e, traceback.format_exc())
+                cf = CompanyFinancials(r.stock_code, "FAILED", f"처리 오류: {e}")
             fin_status[cf.status] = fin_status.get(cf.status, 0) + 1
             price = PriceInfo(r.stock_code, pr.snapshot.actual_date.isoformat(), float(r.close),
                               int(r.listed_shares), float(r.market_cap), pr.snapshot.source,
@@ -111,15 +117,36 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
                                 "dart_fatal": str(fp.dart.fatal) if fp.dart.fatal else None}
         stages["ratios"] = {"companies": len(results), "metric_rows": len(ratio_rows)}
         summary["financial_status"] = fin_status
-        summary["all_10_pass"] = [r.stock_code for r, cf, rr in results if rr.all_pass]
         if fin_status.get("NO_API_KEY") or fin_status.get("FAILED"):
             status = "PARTIAL"
-        stages["not_implemented"] = ["STEP 6 스크리닝·선정", "STEP 7 리스크",
+        # ---------------- 4. 스크리닝·선정 ----------------
+        log.info("[4] 저평가 후보 선정")
+        srows = ScreeningEngine().run(results)
+        db.upsert("screening_results", to_db_rows(run_id, started.date().isoformat(), srows))
+        cands = [x for x in srows if x.passed_all]
+        selected = [x for x in srows if x.selected]
+        diff = compare_with_previous(db, run_id)
+        stages["screening"] = {"candidates": len(cands), "selected": len(selected),
+                               "selected_codes": [x.stock_code for x in selected],
+                               "vs_previous": {k: v for k, v in diff.items() if k != "metric_changes"},
+                               "metric_changes": len(diff.get("metric_changes", []))}
+        summary["candidates_all_10_pass"] = len(cands)
+        summary["selected"] = [f"{x.rank}. {x.stock_code} {x.name} {x.score:.1f}점" for x in selected]
+        _print_selection(srows, diff)
+        stages["not_implemented"] = ["STEP 7 리스크",
                                      "STEP 10 보고서", "STEP 11 07:30 자동 실행"]
         _print_summary(results, summary)
         if dump:
             path = config.path("log_dir") / f"verify_{run_id}.log"
-            path.write_text(verification_report(results, pr.checks, run_id), encoding="utf-8")
+            srow_map = {x.stock_code: x for x in srows}
+            text = verification_report(results, pr.checks, run_id)
+            text += "\n\n" + "=" * 100 + "\n## 스크리닝 점수 (가중치·환산 기준: config/scoring_weights.yaml)\n"
+            for x in srows[:200]:
+                text += (f"- {x.rank}. {x.stock_code} {x.name} | 선정={'Y' if x.selected else 'N'} | 통과 {x.pass_count}/10 | "
+                         f"{x.score:.2f}점 | " + "; ".join(
+                             f"{k}={'-' if c['value'] is None else round(c['value'], 4)}→{c['points']:.2f}/{c['weight']}"
+                             for k, c in x.components.items()) + (f" | 경고: {' / '.join(x.warnings)}" if x.warnings else "") + "\n")
+            path.write_text(text, encoding="utf-8")
             summary["verification_report"] = str(path)
             print(f"\n검증 리포트 저장: {path}")
     except Exception as e:  # noqa: BLE001
@@ -194,9 +221,33 @@ def verification_report(results, price_checks: dict, run_id: str) -> str:
     return "\n".join(L)
 
 
+def _print_selection(srows, diff) -> None:
+    cands = [x for x in srows if x.passed_all]
+    print(f"\n=== 스크리닝: 10개 지표 모두 통과 {len(cands)}개 / 최종 선정 {sum(x.selected for x in srows)}개 ===")
+    if len(cands) < 10:
+        print("  ※ 충족 종목이 10개 미만이므로 조건을 완화하지 않고 충족 종목만 선정함")
+    for x in [x for x in srows if x.selected]:
+        comp = ", ".join(f"{k}:{v['points']:.1f}" for k, v in x.components.items())
+        print(f"  {x.rank:>2}. {x.stock_code} {x.name} {x.score:.1f}점 | {comp}")
+        for w in x.warnings:
+            print(f"      ⚠ {w}")
+    near = [x for x in srows if not x.passed_all and x.pass_count >= 8][:10]
+    if near:
+        print("  참고(8~9개 충족, 선정 대상 아님): " + ", ".join(
+            f"{x.stock_code} {x.name}({x.pass_count}/10, 미충족: "
+            f"{'/'.join(k for k, v in x.checks.items() if v != '통과')})" for x in near))
+    if diff.get("previous_run"):
+        print(f"  직전 실행({diff['previous_run']}) 대비 신규 편입 {diff['new_entries']} / 제외 {diff['removed']} / "
+              f"지표 변화 {len(diff['metric_changes'])}건")
+
+
 def _print_summary(results, summary) -> None:
-    print("\n=== 재무지표 계산 결과 (상위 30개 표시) ===")
-    for r, cf, rr in results[:30]:
+    if len(results) > 30:
+        print(f"\n(종목별 상세 출력 생략: {len(results)}개 - DB 및 --dump 리포트 참조)")
+        print(json.dumps(summary, ensure_ascii=False, indent=1, default=str))
+        return
+    print("\n=== 재무지표 계산 결과 ===")
+    for r, cf, rr in results:
         cells = []
         for m in rr.checklist:
             mark = {"통과": "O", "미통과": "X", "확인 불가": "?"}[m.check.value]

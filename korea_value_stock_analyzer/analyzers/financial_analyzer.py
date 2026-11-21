@@ -157,6 +157,7 @@ class CompanyFinancials:
     quarters: list[dict[str, Any]] = field(default_factory=list)           # 최신 → 과거 4개
     ttm: dict[str, Value] = field(default_factory=dict)
     ttm_basis: str = ""
+    latest_q_yoy: dict[str, Any] = field(default_factory=dict)            # 최근 분기 영업이익 전년 동기 대비
     shares: dict[str, Any] = field(default_factory=dict)                   # DART 주식총수
     validations: list[dict[str, Any]] = field(default_factory=list)
     bs_dump: list[tuple] = field(default_factory=list)
@@ -456,6 +457,15 @@ class FinancialAnalyzer:
         # 분기 보고서가 빠진 경우 전기 동분기 열로 보완하지 않고 누락으로 둠 (임의 보간 금지)
         cf.quarters = quarters
 
+        # --- 최근 분기 영업이익 전년 동기 대비 (방향성) ---
+        if not latest.is_annual:
+            cur = self._value(latest, ACCOUNTS["operating_income"], "thstrm_amount")
+            prev = self._value(latest, ACCOUNTS["operating_income"],
+                               "frmtrm_amount" if latest.reprt_code == REPRT_Q1 else "frmtrm_q_amount")
+            if cur.value is not None and prev.value is not None:
+                yoy = (cur.value - prev.value) / abs(prev.value) * 100 if prev.value else None
+                cf.latest_q_yoy = {"period": latest.period, "op_current": cur.value, "op_prior_year": prev.value,
+                                   "yoy_pct": yoy, "rcept_no": latest.rcept_no}
         # --- TTM ---
         if latest.is_annual:
             cf.ttm_basis = f"최근 사업보고서({latest.period}) 연간 값"

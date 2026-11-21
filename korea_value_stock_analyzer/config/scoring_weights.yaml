@@ -1,7 +1,14 @@
-# PART 4. 최종 선정 점수(100점 만점) 가중치 - STEP 6에서 사용
-# 합계가 100이 되도록 유지함 (screening_engine에서 검증)
+# PART 4. 최종 선정 점수(100점 만점) 가중치와 항목별 환산 기준
+# 가중치 합계는 반드시 100 (screening_engine 이 실행 시 검증함)
+#
+# 항목 점수 = 가중치 × 환산비율(0~1)
+#  - lower_better : (기준 상한 − 값) / (기준 상한 − 최우수값) 을 0~1 로 제한
+#  - higher_better: (값 − 기준 하한) / (최우수값 − 기준 하한) 을 0~1 로 제한
+#  - 값이 없거나(N/M·확인 불가) 의미가 없으면 0점 처리하고 사유를 기록함
+# 단순히 PER 이 낮다는 이유만으로 높은 순위가 되지 않도록 PER 비중을 10점으로 제한함
+
 weights:
-  criteria_pass_count: 30     # 10개 재무지표 충족 개수
+  criteria_pass_count: 30        # 10개 재무지표 충족 개수 (충족 개수 / 10)
   per: 10
   pbr: 10
   operating_margin: 10
@@ -11,3 +18,18 @@ weights:
   revenue_growth: 8
   operating_cash_flow: 5
   recent_quarter_direction: 5
+
+scales:
+  per:                {direction: lower_better,  worst: 15.0,   best: 5.0}      # 15배 → 0점, 5배 이하 → 만점
+  pbr:                {direction: lower_better,  worst: 1.5,    best: 0.3}
+  operating_margin:   {direction: higher_better, worst: 5.0,    best: 25.0}     # %
+  net_margin:         {direction: higher_better, worst: 5.0,    best: 20.0}     # %
+  debt_ratio:         {direction: lower_better,  worst: 200.0,  best: 30.0}     # %
+  reserve_ratio:      {direction: higher_better, worst: 2000.0, best: 10000.0}  # %
+  revenue_growth:     {direction: higher_better, worst: -10.0,  best: 20.0}     # 직전 사업연도 매출 성장률 %
+  operating_cash_flow: {direction: higher_better, worst: 0.0,   best: 1.0}      # 영업현금흐름 / 지배순이익 (영업CF ≤ 0 이면 0점)
+  recent_quarter_direction: {direction: higher_better, worst: -20.0, best: 20.0} # 최근 분기 영업이익 전년 동기 대비 %
+
+selection:
+  max_selected: 10
+  # 동점 시 순서: 점수 → PER 낮은 순 → PBR 낮은 순 → 영업이익률 높은 순
