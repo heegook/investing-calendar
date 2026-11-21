@@ -174,6 +174,16 @@ class DartCollector:
                 time.sleep(1.5 * (attempt + 1))
         raise DartError("NETWORK", f"{endpoint} 호출 실패: {last_exc}")
 
+    def _load_raw(self, name: str) -> Any | None:
+        """같은 조회 조건으로 이미 보관된 원천 응답 재사용(일 호출 한도 절약)"""
+        f = self.raw_dir / name
+        if f.exists():
+            try:
+                return json.loads(f.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                return None
+        return None
+
     def _save_raw(self, name: str, payload: Any) -> None:
         f = self.raw_dir / name
         f.parent.mkdir(parents=True, exist_ok=True)
@@ -200,6 +210,9 @@ class DartCollector:
         return out
 
     def periodic_reports(self, corp_code: str, ref: date) -> list[PeriodicReport]:
+        cached = self._load_raw(f"{corp_code}/list_{ref:%Y%m%d}.json")
+        if cached is not None:
+            return [PeriodicReport(**r) for r in cached]
         m = ref.year * 12 + ref.month - 1 - self.lookback_months
         bgn = date(m // 12, m % 12 + 1, 1)
         out, page = [], 1
@@ -291,9 +304,12 @@ class DartCollector:
 
         진단 정보는 self.last_stock_diag 에 남김 (응답 상태, 구분값 목록)
         """
-        j = self._request("stockTotqySttus.json", {"corp_code": corp_code, "bsns_year": bsns_year,
-                                                    "reprt_code": reprt_code})
-        self._save_raw(f"{corp_code}/stockTotqy_{bsns_year}_{reprt_code}.json", j)
+        name = f"{corp_code}/stockTotqy_{bsns_year}_{reprt_code}.json"
+        j = self._load_raw(name)
+        if not j or j.get("status") != "000":
+            j = self._request("stockTotqySttus.json", {"corp_code": corp_code, "bsns_year": bsns_year,
+                                                        "reprt_code": reprt_code})
+            self._save_raw(name, j)
         self.last_stock_rows = j.get("list", []) if j.get("status") == "000" else []
         ses = [(it.get("se") or "") for it in j.get("list", [])]
         self.last_stock_diag = f"stockTotqySttus({bsns_year},{reprt_code}) status={j.get('status')} se={ses}"
@@ -361,7 +377,10 @@ class DartCollector:
         return re.sub(r"\n\s*\n+", "\n", text)
 
     def disclosures(self, corp_code: str, start: date, end: date, pblntf_ty: str) -> list[dict[str, Any]]:
-        """기간·공시유형별 공시 목록 전체 (리스크 조사용)"""
+        """기간·공시유형별 공시 목록 전체 (리스크 조사용, 같은 날 재실행 시 보관본 재사용)"""
+        cached = self._load_raw(f"{corp_code}/disclosures_{pblntf_ty}_{start:%Y%m%d}_{end:%Y%m%d}.json")
+        if cached is not None:
+            return cached
         out, page = [], 1
         while True:
             j = self._request("list.json", {"corp_code": corp_code, "bgn_de": start.strftime("%Y%m%d"),
@@ -380,6 +399,11 @@ class DartCollector:
 
     def treasury_events(self, corp_code: str, after: date, until: date) -> list[dict[str, str]] | None:
         """기준일 이후 자기주식 취득·처분·소각·신탁 관련 주요사항보고서 등 공시 목록 (None = 조회 실패)"""
+        cached = self._load_raw(f"{corp_code}/treasury_events_{after:%Y%m%d}_{until:%Y%m%d}.json")
+        if cached is not None:
+            self.last_stock_diag = f"자기주식 관련 공시({after}~{until}) {len(cached)}건(당일 보관본): " + "; ".join(
+                f"{e['rcept_dt']} {e['report_nm']}" for e in cached[:5])
+            return cached
         out, page = [], 1
         while True:
             j = self._request("list.json", {"corp_code": corp_code, "bgn_de": after.strftime("%Y%m%d"),

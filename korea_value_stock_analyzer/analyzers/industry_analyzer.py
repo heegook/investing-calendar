@@ -132,7 +132,9 @@ class IndustryAnalyzer:
         for item, pat in BUSINESS_SECTIONS.items():
             parts = [b for t, b in business_secs if re.search(pat, t)]
             rep.business[item] = (("\n".join(parts))[: self.excerpt_chars] if parts else "원문에서 해당 항목 미확인")
-        if not business_secs:
+        if text is None:
+            rep.status = "FAILED"
+        elif not business_secs:
             rep.status = "PARTIAL"
             rep.message = (rep.message + " / 사업의 내용 목차 식별 실패").strip(" /")
         return rep

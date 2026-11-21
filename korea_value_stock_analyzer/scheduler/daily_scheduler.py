@@ -135,13 +135,21 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
         summary["candidates_all_10_pass"] = len(cands)
         summary["selected"] = [f"{x.rank}. {x.stock_code} {x.name} {x.score:.1f}점" for x in selected]
         _print_selection(srows, diff)
+        if fp.dart.fatal:
+            # 한도 초과 등으로 재무 수집이 중단되면 선정 결과는 불완전하므로 명시적으로 경고
+            status = "PARTIAL"
+            msg = (f"DART 치명 오류({fp.dart.fatal}) - 이후 종목의 재무제표가 수집되지 않아 스크리닝·선정 결과가 "
+                   f"불완전함. 한도 초기화 후 재실행 필요")
+            stages["warning"] = msg
+            print(f"\n⚠ {msg}")
+            log.error(msg)
         # ---------------- 5. 경영 리스크 (후보군 대상) ----------------
         risk_targets = srows if codes else cands   # --codes 지정 시(검증용) 지정 종목 전체 조사
         log.info("[5] 경영 리스크 및 주요 뉴스 조사 - 대상 %d개", len(risk_targets))
         ra = RiskAnalyzer(fp.dart)
         corp_map = {r["stock_code"]: r["corp_code"] for r in db.query("SELECT stock_code, corp_code FROM companies")}
         risk_reports = {}
-        for x in risk_targets:
+        for x in ([] if fp.dart.fatal else risk_targets):
             rp = ra.analyze(x.stock_code, x.name, corp_map.get(x.stock_code), started.date())
             risk_reports[x.stock_code] = rp
             db.execute("DELETE FROM corporate_risks WHERE stock_code=?", (x.stock_code,))  # 최신 조사 결과로 교체
@@ -164,7 +172,7 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
         ia = IndustryAnalyzer(fp.dart)
         cf_map = {r.stock_code: cf for r, cf, rr in results}
         ind_reports = {}
-        for x in risk_targets:
+        for x in ([] if fp.dart.fatal else risk_targets):
             cfx = cf_map.get(x.stock_code)
             annual = next((d for d in (cfx.reports if cfx else []) if d["reprt_code"] == "11011"), None)
             ir = ia.analyze(x.stock_code, x.name, corp_map.get(x.stock_code), annual)
@@ -177,6 +185,10 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
         stages["special_items"] = {k: sum(1 for v in ind_reports.values() if v.special.get(k) and
                                           v.special[k].result == "Yes") for k in ("지주회사", "중국 관련주", "금융주")}
         _print_special(srows, ind_reports)
+        if fp.dart.fatal and "warning" not in stages:
+            status = "PARTIAL"
+            stages["warning"] = f"리스크·특이사항 단계 중 DART 오류({fp.dart.fatal}) - 해당 단계 결과 불완전, 한도 초기화 후 재실행 필요"
+            print(f"\n⚠ {stages['warning']}")
         stages["not_implemented"] = ["STEP 9 투자 판단", "STEP 10 보고서", "STEP 11 07:30 자동 실행"]
         _print_summary(results, summary)
         if dump:
