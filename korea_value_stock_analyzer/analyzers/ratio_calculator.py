@@ -145,6 +145,8 @@ class RatioCalculator:
             notes = []
             if cf.shares.get("treasury_shares") is not None:
                 notes.append(f"자기주식수 {cf.shares['treasury_shares']:,.0f}주 (DART 결산기준일 {cf.shares.get('stlm_dt')}) 별도 보관")
+                if cf.shares.get("note"):
+                    notes.append(cf.shares["note"])
             else:
                 notes.append("자기주식수 미확인")
             m["listed_shares"] = Metric(
@@ -231,6 +233,10 @@ class RatioCalculator:
             if split_factor != 1.0:
                 status = DataStatus.worst(status, DataStatus.PARTIAL)
             notes = list(eq_parent.notes) + ([split_note] if split_note else [])
+            if cf.shares.get("note"):
+                notes.append(cf.shares["note"])
+                if "변동 미반영" in cf.shares["note"]:
+                    status = DataStatus.worst(status, DataStatus.PARTIAL)
             notes.append(f"기말 유통보통주식수 {outstanding:,.0f}주 = 발행 {cf.shares.get('issued_shares'):,.0f} − "
                          f"자기 {cf.shares.get('treasury_shares'):,.0f} (DART {cf.shares.get('stlm_dt')})"
                          if cf.shares.get("issued_shares") is not None and cf.shares.get("treasury_shares") is not None

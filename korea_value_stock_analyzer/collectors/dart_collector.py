@@ -133,6 +133,7 @@ class DartCollector:
         self.call_count = 0
         self.fatal: DartError | None = None
         self.last_stock_diag = ""
+        self.last_stock_rows: list[dict[str, Any]] = []
 
     @property
     def available(self) -> bool:
@@ -281,6 +282,7 @@ class DartCollector:
         j = self._request("stockTotqySttus.json", {"corp_code": corp_code, "bsns_year": bsns_year,
                                                     "reprt_code": reprt_code})
         self._save_raw(f"{corp_code}/stockTotqy_{bsns_year}_{reprt_code}.json", j)
+        self.last_stock_rows = j.get("list", []) if j.get("status") == "000" else []
         ses = [(it.get("se") or "") for it in j.get("list", [])]
         self.last_stock_diag = f"stockTotqySttus({bsns_year},{reprt_code}) status={j.get('status')} se={ses}"
         if j.get("status") != "000":
@@ -302,3 +304,23 @@ class DartCollector:
                 self.last_stock_diag += f" → 사용: {it}"
                 return out
         return None
+
+
+def share_row(it: dict[str, Any]) -> dict[str, Any]:
+    out = {"issued_shares": parse_amount(it.get("istc_totqy")), "treasury_shares": parse_amount(it.get("tesstk_co")),
+           "outstanding_shares": parse_amount(it.get("distb_stock_co")), "stlm_dt": it.get("stlm_dt"),
+           "rcept_no": it.get("rcept_no")}
+    if out["outstanding_shares"] is None and None not in (out["issued_shares"], out["treasury_shares"]):
+        out["outstanding_shares"] = out["issued_shares"] - out["treasury_shares"]
+    return out
+
+
+def only_common_class(rows: list[dict[str, Any]]) -> bool:
+    """보통주 외 종류주식(우선주 등) 발행주식수가 모두 0/공란이면 True"""
+    for it in rows:
+        se = re.sub(r"\s+", "", it.get("se") or "")
+        if any(k in se for k in ("보통", "합계", "비고")):
+            continue
+        if (parse_amount(it.get("istc_totqy")) or 0) > 0:
+            return False
+    return True

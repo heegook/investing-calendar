@@ -158,3 +158,13 @@ def test_share_premium_used_when_capital_surplus_row_absent():
     cs = cf.balance["capital_surplus"]
     assert cs.value == pytest.approx(50 * E8)
     assert cs.status == DataStatus.PARTIAL and "주식발행초과금" in cs.notes[0]
+
+
+def test_only_common_class_detection():
+    from collectors.dart_collector import only_common_class
+    hd = [{"se": "보통주식", "istc_totqy": "36,047,135"}, {"se": "배당우선주식\n(1종 종류주식)", "istc_totqy": "-"},
+          {"se": "합계", "istc_totqy": "36,047,135"}, {"se": "비고", "istc_totqy": ""}]
+    ss = [{"se": "보통주", "istc_totqy": "5,846,278,608"}, {"se": "우선주", "istc_totqy": "815,974,664"},
+          {"se": "합계", "istc_totqy": "6,662,253,272"}]
+    assert only_common_class(hd) is True
+    assert only_common_class(ss) is False

@@ -4,7 +4,8 @@ from __future__ import annotations
 from datetime import date
 
 from analyzers.financial_analyzer import CompanyFinancials, FinancialAnalyzer, ReportData
-from collectors.dart_collector import DartCollector, DartError, NoApiKey, parse_amount
+from collectors.dart_collector import (DartCollector, DartError, NoApiKey, only_common_class, parse_amount,
+                                       share_row)
 from core import config
 from core.trading_calendar import now_kst
 from database.db_manager import DBManager
@@ -68,18 +69,28 @@ class FinancialPipeline:
                     return CompanyFinancials(stock_code, "CFS_NOT_AVAILABLE",
                                              "연결재무제표 확인 불가(별도재무제표만 공시) - 별도 대체하지 않음")
                 return CompanyFinancials(stock_code, "NOT_FOUND", "연결재무제표 미확인")
-            shares, diags = {}, []
-            for rep in sorted(fetched, key=lambda r: (r.period, r.is_annual), reverse=True)[:3]:
+            shares, diags, latest_total = {}, [], None
+            ordered = sorted(fetched, key=lambda r: (r.period, r.is_annual), reverse=True)[:3]
+            for idx, rep in enumerate(ordered):
                 shares = self.dart.stock_totals(corp, rep.bsns_year, rep.reprt_code) or {}
                 diags.append(self.dart.last_stock_diag)
+                rows = self.dart.last_stock_rows
+                if idx == 0 and not shares:
+                    latest_total = next((it for it in rows if "합계" in (it.get("se") or "")), None)
                 if shares.get("outstanding_shares"):
-                    if rep.period != max(r.period for r in fetched):
-                        shares["note"] = (shares.get("note", "") + f" 최신 보고서 주식총수 미확인 → {rep.period} 기준 사용").strip()
+                    if idx > 0 and latest_total is not None and only_common_class(rows):
+                        # 직전 보고서에서 보통주 단일 종류가 확인되면 최신 보고서의 '합계' 행 = 보통주
+                        shares = share_row(latest_total)
+                        shares["note"] = (f"최신 보고서({ordered[0].period})는 합계 행만 공시, "
+                                          f"{rep.period} 보고서에서 우선주 등 종류주식 0주 확인 → 합계를 보통주로 사용")
+                    elif idx > 0:
+                        shares["note"] = (shares.get("note", "") + f" 최신 보고서({ordered[0].period})는 보통주 행 미공시 → "
+                                          f"{rep.period} 기준 자기주식수 사용(이후 변동 미반영)").strip()
                     break
             shares["_diag"] = diags
             if shares.get("outstanding_shares") is not None:
                 self.db.upsert("share_counts", [{
-                    "stock_code": stock_code, "rcept_no": shares.get("rcept_no") or top.rcept_no,
+                    "stock_code": stock_code, "rcept_no": shares.get("rcept_no") or ordered[0].rcept_no,
                     "stlm_dt": shares.get("stlm_dt"), "issued_shares": shares.get("issued_shares"),
                     "treasury_shares": shares.get("treasury_shares"),
                     "outstanding_shares": shares.get("outstanding_shares"), "source": "DART_OPENAPI",
