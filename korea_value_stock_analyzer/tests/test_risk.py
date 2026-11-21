@@ -6,6 +6,7 @@ from analyzers.risk_analyzer import RiskAnalyzer, classify, final_result_of
 
 def test_classification_and_stage():
     assert classify("횡령ㆍ배임혐의발생") == ("횡령·배임", "조사 착수")
+    assert classify("횡령ㆍ배임사실확인")[1].startswith("기소 또는 판결")
     assert classify("[유가]불성실공시법인지정예고")[0] == "불성실공시법인 지정"
     assert classify("[유가]불성실공시법인지정예고")[1] == "조사 착수"
     assert classify("[코]불성실공시법인지정")[1] == "행정제재"
@@ -46,3 +47,20 @@ def test_events_recorded_with_source():
     e = rep.events[0]
     assert e.event_year == 2020 and e.stage == "행정제재" and "rcpNo=20200101000001" in e.source_url
     assert "원문 확인 필요" in rep.conclusion
+
+
+def test_news_false_positive_filters():
+    from analyzers.risk_analyzer import classify_news
+    assert classify_news("GS, SOOP 4연패 몰고 2연승…'호키 트리플크라운' 삼성화재 연패 탈출") is None
+    assert classify_news("와이엔텍, 코오롱건설과 16억 하도급계약 체결") is None
+    assert classify_news("'단선·화재 안심' 쿠쿠홈시스, DC 카본매트 출시") is None
+    assert classify_news("공정위, KH바텍 불공정 하도급 시정명령") == "공정거래법 및 하도급법 위반"
+    assert classify_news("여수산단 와이엔텍 폐기물 야적장 화재 발생") == "중대한 환경·안전 사고"
+    assert classify_news("효성, 분식회계 재판 마침표") == "회계부정"
+
+
+def test_non_designation_and_resolution():
+    assert classify("불성실공시법인미지정 (지정유예)")[1].startswith("무혐의")
+    assert classify("기타시장안내(상장적격성 실질심사 대상제외 결정)")[1].startswith("무혐의")
+    assert classify("조회공시요구(풍문또는보도)(감사의견 비적정설)") == ("회계부정", "의혹 제기")
+    assert classify("생산중단(자회사의 주요경영사항)")[0].startswith("생산중단")

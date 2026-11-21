@@ -143,9 +143,12 @@ class ScreeningEngine:
 # ----------------------------------------------------------------------
 def compare_with_previous(db, run_id: str) -> dict[str, Any]:
     """직전 실행 대비 신규 편입·제외 종목 및 지표 변화 (PART 12)"""
-    prev = db.query("SELECT run_id FROM screening_results WHERE run_id < ? ORDER BY run_id DESC LIMIT 1", (run_id,))
+    # 검증용 부분 실행(--codes)과 비교하지 않도록 대상 종목 수가 비슷한(80% 이상) 직전 실행만 사용
+    cur_n = db.query("SELECT COUNT(*) AS n FROM screening_results WHERE run_id=?", (run_id,))[0]["n"]
+    prev = db.query("SELECT run_id FROM screening_results WHERE run_id < ? GROUP BY run_id HAVING COUNT(*) >= ? "
+                    "ORDER BY run_id DESC LIMIT 1", (run_id, max(1, int(cur_n * 0.8))))
     if not prev:
-        return {"previous_run": None, "message": "비교할 직전 실행 없음"}
+        return {"previous_run": None, "message": "비교할 직전 전체 실행 없음"}
     p = prev[0]["run_id"]
     cur_sel = {r["stock_code"] for r in db.query("SELECT stock_code FROM screening_results WHERE run_id=? AND selected=1",
                                                   (run_id,))}

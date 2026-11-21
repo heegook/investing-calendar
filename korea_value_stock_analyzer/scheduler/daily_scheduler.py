@@ -143,6 +143,7 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
         for x in risk_targets:
             rp = ra.analyze(x.stock_code, x.name, corp_map.get(x.stock_code), started.date())
             risk_reports[x.stock_code] = rp
+            db.execute("DELETE FROM corporate_risks WHERE stock_code=?", (x.stock_code,))  # 최신 조사 결과로 교체
             db.upsert("corporate_risks", [{
                 "stock_code": e.stock_code, "event_year": e.event_year, "event_type": e.event_type,
                 "summary": e.summary, "related_party": e.related_party, "stage": e.stage,
