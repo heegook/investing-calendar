@@ -23,6 +23,7 @@ import pandas as pd
 
 from analyzers.financial_pipeline import FinancialPipeline
 from analyzers.ratio_calculator import CHECK_LABEL, PriceInfo, RatioCalculator
+from analyzers.risk_analyzer import RiskAnalyzer
 from analyzers.screening_engine import ScreeningEngine, compare_with_previous, to_db_rows
 from analyzers.valuation_engine import ValuationEngine
 from analyzers.financial_analyzer import CompanyFinancials
@@ -133,8 +134,31 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
         summary["candidates_all_10_pass"] = len(cands)
         summary["selected"] = [f"{x.rank}. {x.stock_code} {x.name} {x.score:.1f}점" for x in selected]
         _print_selection(srows, diff)
-        stages["not_implemented"] = ["STEP 7 리스크",
-                                     "STEP 10 보고서", "STEP 11 07:30 자동 실행"]
+        # ---------------- 5. 경영 리스크 (후보군 대상) ----------------
+        risk_targets = srows if codes else cands   # --codes 지정 시(검증용) 지정 종목 전체 조사
+        log.info("[5] 경영 리스크 및 주요 뉴스 조사 - 대상 %d개", len(risk_targets))
+        ra = RiskAnalyzer(fp.dart)
+        corp_map = {r["stock_code"]: r["corp_code"] for r in db.query("SELECT stock_code, corp_code FROM companies")}
+        risk_reports = {}
+        for x in risk_targets:
+            rp = ra.analyze(x.stock_code, x.name, corp_map.get(x.stock_code), started.date())
+            risk_reports[x.stock_code] = rp
+            db.upsert("corporate_risks", [{
+                "stock_code": e.stock_code, "event_year": e.event_year, "event_type": e.event_type,
+                "summary": e.summary, "related_party": e.related_party, "stage": e.stage,
+                "final_result": e.final_result, "source_url": e.source_url, "checked_date": e.checked_date,
+                "status": e.source} for e in rp.events])
+            db.upsert("corporate_risks", [{
+                "stock_code": x.stock_code, "event_year": None, "event_type": "조사 요약",
+                "summary": rp.conclusion, "related_party": None, "stage": None, "final_result": None,
+                "source_url": f"scope:{run_id}", "checked_date": rp.scope.get("checked_date"),
+                "status": json.dumps({"status": rp.status, "message": rp.message, **rp.scope}, ensure_ascii=False)}])
+        stages["risk"] = {"companies": len(risk_reports),
+                          "with_events": sum(1 for v in risk_reports.values() if v.events),
+                          "news": next(iter(risk_reports.values())).scope.get("news") if risk_reports else None}
+        _print_risk(srows, risk_reports)
+        stages["not_implemented"] = ["STEP 8 특이사항·산업 분석", "STEP 9 투자 판단", "STEP 10 보고서",
+                                     "STEP 11 07:30 자동 실행"]
         _print_summary(results, summary)
         if dump:
             path = config.path("log_dir") / f"verify_{run_id}.log"
@@ -146,6 +170,12 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
                          f"{x.score:.2f}점 | " + "; ".join(
                              f"{k}={'-' if c['value'] is None else round(c['value'], 4)}→{c['points']:.2f}/{c['weight']}"
                              for k, c in x.components.items()) + (f" | 경고: {' / '.join(x.warnings)}" if x.warnings else "") + "\n")
+            text += "\n" + "=" * 100 + "\n## 경영 리스크 조사 (후보군)\n"
+            for code, rp in risk_reports.items():
+                text += f"### {code} {rp.name}: {rp.conclusion} [{rp.status}] 범위: {rp.scope}\n"
+                for e in rp.events:
+                    text += (f"- {e.event_date} | {e.event_type} | {e.stage} | {e.final_result} | {e.summary} | "
+                             f"{e.related_party} | {e.source_url}\n")
             path.write_text(text, encoding="utf-8")
             summary["verification_report"] = str(path)
             print(f"\n검증 리포트 저장: {path}")
@@ -221,6 +251,19 @@ def verification_report(results, price_checks: dict, run_id: str) -> str:
             L.append(f"- {m.name}: {m.display} | {m.check.value if m.check else '-'} | {m.status.value} | "
                      f"{m.reason.value if m.reason else ''} | {' / '.join(n for n in m.notes if n)}")
     return "\n".join(L)
+
+
+def _print_risk(srows, reports) -> None:
+    print("\n=== 경영 리스크 조사 (선정 종목, 최근 10년 DART 공시 보고서명 기준) ===")
+    for x in [x for x in srows if x.selected or x.stock_code in reports][:15]:
+        rp = reports.get(x.stock_code)
+        if rp is None:
+            continue
+        print(f"  {x.stock_code} {x.name}: {rp.conclusion} [{rp.status}{(' - ' + rp.message) if rp.message else ''}]")
+        for e in rp.events[:6]:
+            print(f"      {e.event_date} | {e.event_type} | {e.stage} | {e.summary} | {e.source_url}")
+        if len(rp.events) > 6:
+            print(f"      … 외 {len(rp.events) - 6}건 (DB corporate_risks 참조)")
 
 
 def _print_selection(srows, diff) -> None:

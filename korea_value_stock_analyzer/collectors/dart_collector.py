@@ -309,6 +309,24 @@ class DartCollector:
                 return out
         return None
 
+    def disclosures(self, corp_code: str, start: date, end: date, pblntf_ty: str) -> list[dict[str, Any]]:
+        """기간·공시유형별 공시 목록 전체 (리스크 조사용)"""
+        out, page = [], 1
+        while True:
+            j = self._request("list.json", {"corp_code": corp_code, "bgn_de": start.strftime("%Y%m%d"),
+                                            "end_de": end.strftime("%Y%m%d"), "pblntf_ty": pblntf_ty,
+                                            "page_no": page, "page_count": 100})
+            if j.get("status") == "013":
+                break
+            if j.get("status") != "000":
+                raise DartError(j.get("status", "900"), j.get("message", ""))
+            out += j.get("list", [])
+            if page >= int(j.get("total_page", 1)):
+                break
+            page += 1
+        self._save_raw(f"{corp_code}/disclosures_{pblntf_ty}_{start:%Y%m%d}_{end:%Y%m%d}.json", out)
+        return out
+
     def treasury_events(self, corp_code: str, after: date, until: date) -> list[dict[str, str]] | None:
         """기준일 이후 자기주식 취득·처분·소각·신탁 관련 주요사항보고서 등 공시 목록 (None = 조회 실패)"""
         out, page = [], 1
