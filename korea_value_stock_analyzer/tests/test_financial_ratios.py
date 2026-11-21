@@ -168,3 +168,23 @@ def test_only_common_class_detection():
           {"se": "합계", "istc_totqy": "6,662,253,272"}]
     assert only_common_class(hd) is True
     assert only_common_class(ss) is False
+
+
+def test_investment_section_when_total_row_comes_last():
+    """'유동자산 합계 → 비유동 항목들 → 비유동자산 합계 → 자산총계' 순서 형식"""
+    reps = reports()
+    for r in reps:
+        for row in r.rows:
+            if row["account_nm"] == "비유동자산":
+                row["ord"] = "19"
+    cf = FinancialAnalyzer().analyze("TEST01", reps, SHARES)
+    assert cf.investment_assets.value == pytest.approx(200 * E8)
+    assert cf.investment_assets.status == DataStatus.VERIFIED
+
+
+def test_preferred_shares_used_in_eps_cross_check():
+    sh = dict(SHARES, other_class_outstanding=2_000_000.0)
+    cf = FinancialAnalyzer().analyze("TEST01", reports(), sh)
+    rr = RatioCalculator().calculate(cf, price())
+    assert rr.metrics["per"].inputs["eps_cross_check"] == pytest.approx(90 * E8 / 12_000_000)
+    assert any("우선주" in n for n in rr.metrics["pbr"].notes)

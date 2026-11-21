@@ -301,6 +301,10 @@ class DartCollector:
                         and out["treasury_shares"] is not None:
                     out["outstanding_shares"] = out["issued_shares"] - out["treasury_shares"]
                     out["note"] = "유통주식수 = 발행주식총수 − 자기주식수 (원천 유통주식수 공란)"
+                # 우선주 등 종류주식 유통주식수 합계(EPS 교차검증·BPS 주석용)
+                others = [parse_amount(x.get("distb_stock_co")) or 0 for x in j.get("list", [])
+                          if not any(k in re.sub(r"\s+", "", x.get("se") or "") for k in ("보통", "합계", "비고"))]
+                out["other_class_outstanding"] = float(sum(others))
                 self.last_stock_diag += f" → 사용: {it}"
                 return out
         return None

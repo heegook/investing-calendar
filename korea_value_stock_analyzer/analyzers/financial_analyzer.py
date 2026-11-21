@@ -156,6 +156,7 @@ class CompanyFinancials:
     ttm_basis: str = ""
     shares: dict[str, Any] = field(default_factory=dict)                   # DART 주식총수
     validations: list[dict[str, Any]] = field(default_factory=list)
+    bs_dump: list[tuple] = field(default_factory=list)
     reports: list[dict[str, Any]] = field(default_factory=list)
 
     def add_check(self, name: str, ok: bool | None, detail: str) -> None:
@@ -211,17 +212,47 @@ class FinancialAnalyzer:
         return Value(amt, DataStatus.VERIFIED if not notes else DataStatus.PARTIAL, src, notes=notes)
 
     # ---------------- 투자자산 ----------------
-    def investment_assets(self, rep: ReportData) -> tuple[Value, list[dict[str, Any]]]:
-        bs = sorted([r for r in rep.rows if r.get("sj_div") == "BS"], key=lambda r: int(r.get("ord") or 0))
+    @staticmethod
+    def _noncurrent_section(bs: list[dict[str, Any]]) -> tuple[int, int] | None:
         start = next((i for i, r in enumerate(bs) if r.get("account_id") in ACCOUNTS["noncurrent_assets"].ids
                       or re.search(ACCOUNTS["noncurrent_assets"].names, _norm(r.get("account_nm")))), None)
         end = next((i for i, r in enumerate(bs) if r.get("account_id") in ACCOUNTS["total_assets"].ids
                     or re.search(ACCOUNTS["total_assets"].names, _norm(r.get("account_nm")))), None)
-        if start is None or end is None or end <= start:
-            return Value(None, DataStatus.UNVERIFIED, reason=Reason.ACCOUNT_NOT_FOUND,
-                         notes=["비유동자산 구간 식별 불가"]), []
+        if start is None or end is None:
+            return None
+        if end > start + 1:
+            return start + 1, end          # 비유동자산 합계 행이 구간 머리에 있는 형식
+        cur = next((i for i, r in enumerate(bs) if r.get("account_id") in ACCOUNTS["current_assets"].ids
+                    or re.search(ACCOUNTS["current_assets"].names, _norm(r.get("account_nm")))), None)
+        if cur is not None and cur < start and start - cur > 1:
+            return cur + 1, start          # 합계 행이 구간 끝에 오는 형식: (유동자산 합계, 비유동자산 합계) 사이
+        return None
+
+    def investment_assets(self, rep: ReportData) -> tuple[Value, list[dict[str, Any]]]:
+        """비유동자산 구간에서 투자자산 계정 합산
+
+        DART 응답의 행 순서(ord) 형식이 회사별로 달라 다음 순서로 구간을 식별함
+         1) ord 정렬 기준 '비유동자산 합계 행 ~ 자산총계 행' 사이
+         2) 합계 행이 구간 끝에 오는 형식이면 '유동자산 합계 행 ~ 비유동자산 합계 행' 사이
+         3) 응답 원래 순서로 1)~2) 재시도
+         4) 실패 시 계정명 기준(단기·유동 표기 제외)으로 분류하고 PARTIAL 표시
+        """
+        bs_raw = [r for r in rep.rows if r.get("sj_div") == "BS"]
+        method, bs, sec = "", [], None
+        for label, rows in (("ord 정렬", sorted(bs_raw, key=lambda r: int(r.get("ord") or 0))), ("응답 순서", bs_raw)):
+            sec = self._noncurrent_section(rows)
+            if sec:
+                method, bs = label, rows
+                break
+        if sec:
+            candidates, fallback = bs[sec[0]:sec[1]], False
+        else:
+            candidates, fallback = [r for r in bs_raw if not re.match(r"^(단기|유동)", _norm(r.get("account_nm")))], True
+            method = "계정명 기준(구간 식별 실패)"
+        start, end = 0, len(candidates)
+        bs = candidates
         items = []
-        for r in bs[start + 1:end]:
+        for r in bs[start:end]:
             nm = _norm(r.get("account_nm"))
             cat = INVESTMENT_ID.get(r.get("account_id"))
             if cat is None and not re.search(INVESTMENT_EXCLUDE, nm):
@@ -248,8 +279,11 @@ class FinancialAnalyzer:
         total = sum(it["amount"] for it in items if it["included"])
         src = SourceRef("DART_OPENAPI", rep.rcept_no, rep.period, rep.collected_at,
                         f"{rep.report_nm} | BS 비유동자산 구간 투자자산 {sum(i['included'] for i in items)}개 계정 합계")
-        notes = [] if items else ["투자자산 해당 계정 없음 → 0원으로 처리(계정 부재 확인됨)"]
-        return Value(total, DataStatus.VERIFIED if items else DataStatus.PARTIAL, src, notes=notes), items
+        notes = [f"구간 식별: {method}"] + ([] if items else ["투자자산 해당 계정 없음 → 0원으로 처리"])
+        status = DataStatus.VERIFIED if items and not fallback else DataStatus.PARTIAL
+        if fallback:
+            notes.append("비유동자산 구간 식별 실패 → 계정명 기준 분류(유동 항목 혼입 가능성 점검 필요)")
+        return Value(total, status, src, notes=notes), items
 
     # ---------------- 메인 ----------------
     def analyze(self, stock_code: str, reports: list[ReportData], shares: dict[str, Any] | None = None,
@@ -290,6 +324,8 @@ class FinancialAnalyzer:
         cf.balance = {k: self._value(latest, ACCOUNTS[k], "thstrm_amount") for k in BS_KEYS}
         cf.balance_period = latest.period
         cf.investment_assets, cf.investment_breakdown = self.investment_assets(latest)
+        cf.bs_dump = [(r.get("ord"), r.get("account_id"), r.get("account_nm"), r.get("thstrm_amount"))
+                      for r in latest.rows if r.get("sj_div") == "BS"]
 
         self._parent_fallbacks(cf, latest, annuals)
         self._validate_balance(cf)

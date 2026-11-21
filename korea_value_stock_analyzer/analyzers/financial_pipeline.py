@@ -78,7 +78,8 @@ class FinancialPipeline:
                 if idx == 0 and not shares:
                     latest_total = next((it for it in rows if "합계" in (it.get("se") or "")), None)
                 if shares.get("outstanding_shares"):
-                    if idx > 0 and latest_total is not None and only_common_class(rows):
+                    if (idx > 0 and latest_total is not None and only_common_class(rows)
+                            and share_row(latest_total).get("outstanding_shares") is not None):
                         # 직전 보고서에서 보통주 단일 종류가 확인되면 최신 보고서의 '합계' 행 = 보통주
                         shares = share_row(latest_total)
                         shares["note"] = (f"최신 보고서({ordered[0].period})는 합계 행만 공시, "

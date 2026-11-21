@@ -148,6 +148,10 @@ def verification_report(results, price_checks: dict, run_id: str) -> str:
         L.append(f"### 투자자산 합계 = {_fmt(ia.value) if ia else 'null'}")
         L += [f"- {'포함' if i['included'] else '제외'} {i['category']} | {i['account_id']} | {i['account_nm']} | "
               f"{_fmt(i['amount'])} {i['note']}" for i in cf.investment_breakdown]
+        L.append("### 재무상태표 원천 행 (ord | account_id | 계정명 | 당기말)")
+        L += [f"- {o} | {a} | {n} | {v}" for o, a, n, v in cf.bs_dump]
+        if ia is not None:
+            L.append(f"- 투자자산 주석: {'; '.join(ia.notes)}")
         L.append("### 최근 4개 분기")
         for q in cf.quarters:
             L.append(f"- {q['label']}: " + ", ".join(f"{k}={_fmt(q[k].value)}" for k in

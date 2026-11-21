@@ -191,11 +191,13 @@ class RatioCalculator:
             status = DataStatus.worst(price.status, ttm_eps.status)
             # 교차검증: TTM 지배순이익 / 유통보통주식수
             cross = None
+            other_cls = cf.shares.get("other_class_outstanding") or 0
             if ttm_nip.value is not None and outstanding:
-                cross = ttm_nip.value / (outstanding * split_factor)
+                cross = ttm_nip.value / ((outstanding + other_cls) * split_factor)
                 if eps_adj != 0:
                     dev = abs(cross / eps_adj - 1) * 100
-                    notes.append(f"EPS 교차검증: TTM 지배순이익/유통주식수 = {cross:,.1f}원 (보고 EPS 대비 {dev:.1f}% 차이, "
+                    base = "보통주+우선주 등 유통주식수" if other_cls else "유통주식수"
+                    notes.append(f"EPS 교차검증: TTM 지배순이익/{base} = {cross:,.1f}원 (보고 EPS 대비 {dev:.1f}% 차이, "
                                  f"유통주식수는 가중평균이 아닌 결산일 기준 근사)")
                     if dev > self.v["eps_cross_check_tolerance_pct"]:
                         status = DataStatus.worst(status, DataStatus.PARTIAL)
@@ -233,6 +235,9 @@ class RatioCalculator:
             if split_factor != 1.0:
                 status = DataStatus.worst(status, DataStatus.PARTIAL)
             notes = list(eq_parent.notes) + ([split_note] if split_note else [])
+            if cf.shares.get("other_class_outstanding"):
+                notes.append(f"우선주 등 종류주식 {cf.shares['other_class_outstanding']:,.0f}주 존재 → 지배지분 전체를 "
+                             f"보통주로 나눈 지시 공식이므로 BPS 과대·PBR 과소 가능")
             if cf.shares.get("note"):
                 notes.append(cf.shares["note"])
                 if "변동 미반영" in cf.shares["note"]:
