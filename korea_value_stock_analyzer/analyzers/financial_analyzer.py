@@ -110,6 +110,9 @@ INVESTMENT_NAME = [
 ]
 INVESTMENT_AGGREGATE = (r"^(장기투자자산|투자자산|기타투자자산|비유동금융자산|기타비유동금융자산|장기금융자산|"
                         r"관계기업및공동기업투자|관계기업투자등)$")
+BOUNDARY_IDS = {"ifrs-full_Assets", "ifrs-full_CurrentAssets", "ifrs-full_NoncurrentAssets", "ifrs-full_Equity",
+                "ifrs-full_EquityAttributableToOwnersOfParent", "ifrs-full_EquityAndLiabilities",
+                "ifrs-full_Liabilities", "ifrs-full_CurrentLiabilities", "ifrs-full_NoncurrentLiabilities"}
 INVESTMENT_EXCLUDE = r"(파생|대여금|보증금|채권|이연법인세|유형자산|무형자산|사용권|선급|리스채권)"
 
 
@@ -213,42 +216,58 @@ class FinancialAnalyzer:
 
     # ---------------- 투자자산 ----------------
     @staticmethod
-    def _noncurrent_section(bs: list[dict[str, Any]]) -> tuple[int, int] | None:
-        start = next((i for i, r in enumerate(bs) if r.get("account_id") in ACCOUNTS["noncurrent_assets"].ids
-                      or re.search(ACCOUNTS["noncurrent_assets"].names, _norm(r.get("account_nm")))), None)
-        end = next((i for i, r in enumerate(bs) if r.get("account_id") in ACCOUNTS["total_assets"].ids
-                    or re.search(ACCOUNTS["total_assets"].names, _norm(r.get("account_nm")))), None)
-        if start is None or end is None:
+    def _is_boundary(r: dict[str, Any]) -> bool:
+        return (r.get("account_id") in BOUNDARY_IDS
+                or bool(re.search(r"(총계|합계)$|^(유동|비유동)(자산|부채)$|^(자본|부채)$", _norm(r.get("account_nm")))))
+
+    def _noncurrent_section(self, bs: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str] | None:
+        """비유동자산 합계 행을 기준으로 앞·뒤 연속 구간 중 합계가 일치하는 구간을 선택
+
+        DART 응답은 '자산총계 → 유동자산 합계 → 유동 항목 → 비유동자산 합계 → 비유동 항목' 처럼
+        합계 행이 구간 머리에 오는 형식이 일반적이나 회사별 차이가 있어 합계 일치로 확정함
+        """
+        h = next((i for i, r in enumerate(bs) if r.get("account_id") in ACCOUNTS["noncurrent_assets"].ids
+                  or re.search(ACCOUNTS["noncurrent_assets"].names, _norm(r.get("account_nm")))), None)
+        if h is None:
             return None
-        if end > start + 1:
-            return start + 1, end          # 비유동자산 합계 행이 구간 머리에 있는 형식
-        cur = next((i for i, r in enumerate(bs) if r.get("account_id") in ACCOUNTS["current_assets"].ids
-                    or re.search(ACCOUNTS["current_assets"].names, _norm(r.get("account_nm")))), None)
-        if cur is not None and cur < start and start - cur > 1:
-            return cur + 1, start          # 합계 행이 구간 끝에 오는 형식: (유동자산 합계, 비유동자산 합계) 사이
+        total = parse_amount(bs[h].get("thstrm_amount"))
+        after, j = [], h + 1
+        while j < len(bs) and not self._is_boundary(bs[j]):
+            after.append(bs[j]); j += 1
+        before, j = [], h - 1
+        while j >= 0 and not self._is_boundary(bs[j]):
+            before.insert(0, bs[j]); j -= 1
+        for label, rows in (("비유동자산 합계 행 뒤 구간", after), ("비유동자산 합계 행 앞 구간", before)):
+            if not rows or total is None:
+                continue
+            amts = [(parse_amount(r.get("thstrm_amount")) or 0.0, r) for r in rows]
+            s_all = sum(a for a, _ in amts)
+            s_leaf = sum(a for a, r in amts if not re.search(INVESTMENT_AGGREGATE, _norm(r.get("account_nm"))))
+            tol = max(1.0, abs(total) * 0.005)
+            if abs(s_all - total) <= tol or abs(s_leaf - total) <= tol:
+                return rows, f"{label}(항목 합계 = 비유동자산 {total:,.0f} 일치)"
         return None
 
     def investment_assets(self, rep: ReportData) -> tuple[Value, list[dict[str, Any]]]:
         """비유동자산 구간에서 투자자산 계정 합산
 
-        DART 응답의 행 순서(ord) 형식이 회사별로 달라 다음 순서로 구간을 식별함
-         1) ord 정렬 기준 '비유동자산 합계 행 ~ 자산총계 행' 사이
-         2) 합계 행이 구간 끝에 오는 형식이면 '유동자산 합계 행 ~ 비유동자산 합계 행' 사이
-         3) 응답 원래 순서로 1)~2) 재시도
-         4) 실패 시 계정명 기준(단기·유동 표기 제외)으로 분류하고 PARTIAL 표시
+        1) ord 정렬 → 응답 순서 순으로 비유동자산 구간을 찾고 항목 합계가 비유동자산 합계와 일치해야 확정
+        2) 실패 시 계정명 기준(단기·유동 표기 제외)으로 분류하고 PARTIAL 표시
         """
         bs_raw = [r for r in rep.rows if r.get("sj_div") == "BS"]
-        method, bs, sec = "", [], None
-        for label, rows in (("ord 정렬", sorted(bs_raw, key=lambda r: int(r.get("ord") or 0))), ("응답 순서", bs_raw)):
-            sec = self._noncurrent_section(rows)
-            if sec:
-                method, bs = label, rows
+        found = None
+        for rows in (sorted(bs_raw, key=lambda r: int(r.get("ord") or 0)), bs_raw):
+            found = self._noncurrent_section(rows)
+            if found:
                 break
-        if sec:
-            candidates, fallback = bs[sec[0]:sec[1]], False
+        if found:
+            candidates, method = found
+            fallback = False
         else:
-            candidates, fallback = [r for r in bs_raw if not re.match(r"^(단기|유동)", _norm(r.get("account_nm")))], True
-            method = "계정명 기준(구간 식별 실패)"
+            candidates = [r for r in bs_raw if not self._is_boundary(r)
+                          and not re.match(r"^(단기|유동)", _norm(r.get("account_nm")))
+                          and "Current" not in (r.get("account_id") or "").replace("Noncurrent", "")]
+            method, fallback = "계정명 기준(구간 합계 불일치)", True
         start, end = 0, len(candidates)
         bs = candidates
         items = []

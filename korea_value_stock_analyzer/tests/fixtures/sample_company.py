@@ -17,32 +17,37 @@ def row(sj, aid, nm, ord_, th=None, add=None, frm=None, frm_q=None, frm_add=None
 
 def bs_rows(*, assets=2000, ca=800, nca=1200, liab=600, cl=400, ncl=200, equity=1400, parent=1350, nci=50,
             cap=5, csur=50, reta=1200, invest=True):
+    """실제 DART 응답 형식: 합계 행이 구간 머리에 오고 하위 항목이 뒤따름"""
     rows = [
-        row("BS", "ifrs-full_CurrentAssets", "유동자산", 1, ca * E8),
-        row("BS", "ifrs-full_NoncurrentAssets", "비유동자산", 10, nca * E8),
-        row("BS", "ifrs-full_PropertyPlantAndEquipment", "유형자산", 11, 900 * E8),
+        row("BS", "ifrs-full_Assets", "자산총계", 7, assets * E8),
+        row("BS", "ifrs-full_CurrentAssets", "유동자산", 8, ca * E8),
+        row("BS", "ifrs-full_CashAndCashEquivalents", "현금및현금성자산", 9, 500 * E8),
+        row("BS", "ifrs-full_CurrentFinancialAssetsAtFairValueThroughProfitOrLoss", "단기당기손익-공정가치금융자산", 10,
+            100 * E8),
+        row("BS", "ifrs-full_Inventories", "재고자산", 11, 200 * E8),
+        row("BS", "ifrs-full_NoncurrentAssets", "비유동자산", 17, nca * E8),
+        row("BS", "ifrs-full_DeferredTaxAssets", "이연법인세자산", 18, 100 * E8),
     ]
     if invest:
         rows += [
-            row("BS", "-표준계정코드 미사용-", "장기투자자산", 12, 150 * E8),          # 소계 행(중복 방지 대상)
-            row("BS", "ifrs-full_InvestmentAccountedForUsingEquityMethod", "관계기업투자", 13, 100 * E8),
-            row("BS", "-표준계정코드 미사용-", "기타포괄손익-공정가치측정금융자산", 14, 30 * E8),
-            row("BS", "-표준계정코드 미사용-", "장기금융상품", 15, 20 * E8),
-            row("BS", "ifrs-full_InvestmentProperty", "투자부동산", 16, 50 * E8),
-            row("BS", "-표준계정코드 미사용-", "장기파생상품자산", 17, 0),
+            row("BS", "ifrs-full_InvestmentAccountedForUsingEquityMethod", "관계기업투자", 19, 100 * E8),
+            row("BS", "-표준계정코드 미사용-", "기타포괄손익-공정가치측정금융자산", 20, 30 * E8),
+            row("BS", "-표준계정코드 미사용-", "장기금융상품", 21, 20 * E8),
+            row("BS", "ifrs-full_InvestmentProperty", "투자부동산", 22, 50 * E8),
+            row("BS", "ifrs-full_NoncurrentDerivativeFinancialAssets", "비유동파생상품자산", 23, 0),
         ]
     rows += [
-        row("BS", "ifrs-full_DeferredTaxAssets", "이연법인세자산", 18, 100 * E8),
-        row("BS", "ifrs-full_Assets", "자산총계", 20, assets * E8),
-        row("BS", "ifrs-full_CurrentLiabilities", "유동부채", 21, cl * E8),
-        row("BS", "ifrs-full_NoncurrentLiabilities", "비유동부채", 22, ncl * E8),
-        row("BS", "ifrs-full_Liabilities", "부채총계", 23, liab * E8),
-        row("BS", "ifrs-full_EquityAttributableToOwnersOfParent", "지배기업 소유주지분", 24, parent * E8),
-        row("BS", "ifrs-full_IssuedCapital", "자본금", 25, cap * E8),
-        row("BS", "-표준계정코드 미사용-", "자본잉여금", 26, csur * E8),
-        row("BS", "ifrs-full_RetainedEarnings", "이익잉여금", 27, reta * E8),
-        row("BS", "ifrs-full_NoncontrollingInterests", "비지배지분", 28, nci * E8),
-        row("BS", "ifrs-full_Equity", "자본총계", 29, equity * E8),
+        row("BS", "ifrs-full_PropertyPlantAndEquipment", "유형자산", 25, (900 if invest else 1100) * E8),
+        row("BS", "ifrs-full_Equity", "자본총계", 27, equity * E8),
+        row("BS", "ifrs-full_EquityAttributableToOwnersOfParent", "지배기업 소유주지분", 28, parent * E8),
+        row("BS", "ifrs-full_IssuedCapital", "자본금", 29, cap * E8),
+        row("BS", "dart_CapitalSurplus", "자본잉여금", 30, csur * E8),
+        row("BS", "ifrs-full_RetainedEarnings", "이익잉여금", 31, reta * E8),
+        row("BS", "ifrs-full_NoncontrollingInterests", "비지배지분", 32, nci * E8),
+        row("BS", "ifrs-full_EquityAndLiabilities", "부채와자본총계", 33, assets * E8),
+        row("BS", "ifrs-full_CurrentLiabilities", "유동부채", 35, cl * E8),
+        row("BS", "ifrs-full_Liabilities", "부채총계", 40, liab * E8),
+        row("BS", "ifrs-full_NoncurrentLiabilities", "비유동부채", 41, ncl * E8),
     ]
     return rows
 

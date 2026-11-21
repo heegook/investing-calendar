@@ -102,13 +102,26 @@ def test_balance_sheet_mismatch_flags_partial():
     assert rr.metrics["debt_ratio"].status == DataStatus.PARTIAL
 
 
-def test_investment_assets_no_double_count():
+def test_investment_assets_from_real_dart_layout():
     cf = FinancialAnalyzer().analyze("TEST01", reports(), SHARES)
-    # 관계기업 100 + FVOCI 30 + 장기금융상품 20 + 투자부동산 50 = 200억 (소계 '장기투자자산' 150 제외, 파생상품 제외)
+    # 관계기업 100 + FVOCI 30 + 장기금융상품 20 + 투자부동산 50 = 200억, 단기 FVPL(유동)·파생상품 제외
+    assert cf.investment_assets.value == pytest.approx(200 * E8)
+    assert cf.investment_assets.status == DataStatus.VERIFIED
+    names = {i["account_nm"] for i in cf.investment_breakdown}
+    assert "단기당기손익-공정가치금융자산" not in names
+    assert not any("파생" in n for n in names)
+    assert "합계 = 비유동자산" in cf.investment_assets.notes[0]
+
+
+def test_investment_subtotal_row_not_double_counted():
+    reps = reports()
+    for r in reps:
+        r.rows.append({"sj_div": "BS", "account_id": "-표준계정코드 미사용-", "account_nm": "장기투자자산", "ord": "18",
+                       "currency": "KRW", "thstrm_amount": f"{150 * E8:,.0f}"})
+    cf = FinancialAnalyzer().analyze("TEST01", reps, SHARES)
     assert cf.investment_assets.value == pytest.approx(200 * E8)
     sub = [i for i in cf.investment_breakdown if i["account_nm"] == "장기투자자산"][0]
     assert sub["included"] is False
-    assert not any("파생" in i["account_nm"] for i in cf.investment_breakdown)
 
 
 def test_split_detection_adjusts_per_share():
@@ -171,15 +184,17 @@ def test_only_common_class_detection():
 
 
 def test_investment_section_when_total_row_comes_last():
-    """'유동자산 합계 → 비유동 항목들 → 비유동자산 합계 → 자산총계' 순서 형식"""
+    """합계 행이 구간 끝에 오는 형식도 합계 일치로 식별"""
     reps = reports()
     for r in reps:
         for row in r.rows:
             if row["account_nm"] == "비유동자산":
-                row["ord"] = "19"
+                row["ord"] = "26"
+            if row["account_nm"] == "유동자산":
+                row["ord"] = "12"
     cf = FinancialAnalyzer().analyze("TEST01", reps, SHARES)
     assert cf.investment_assets.value == pytest.approx(200 * E8)
-    assert cf.investment_assets.status == DataStatus.VERIFIED
+    assert "앞 구간" in cf.investment_assets.notes[0]
 
 
 def test_preferred_shares_used_in_eps_cross_check():
