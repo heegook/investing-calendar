@@ -320,7 +320,9 @@ class DartCollector:
         tot = [r for r in rows if "총계" in re.sub(r"\s+", "", (r.get("acqs_mth1") or "") + (r.get("acqs_mth2") or ""))
                and is_common_class(r.get("stock_knd"))]
         if len(tot) != 1:
-            self.last_stock_diag += f" 보통주 총계 행 {len(tot)}개 → 사용 안 함"
+            sample = {k: rows[0].get(k) for k in ("acqs_mth1", "acqs_mth2", "acqs_mth3", "stock_knd", "bsis_qy",
+                                                  "change_qy_acqs", "change_qy_dsps", "trmend_qy", "stlm_dt")} if rows else {}
+            self.last_stock_diag += f" 보통주 총계 행 {len(tot)}개 → 사용 안 함 | 첫 행: {sample}"
             return None
         q = parse_amount(tot[0].get("trmend_qy"))
         if q is None and (tot[0].get("trmend_qy") or "").strip() == "-":

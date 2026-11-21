@@ -64,6 +64,8 @@ def test_holding_and_financial_caution(cf):
     assert any("지주회사" in c for c in v.cautions) and not any("금융업 추정" in c for c in v.cautions)
     v2 = ValuationEngine().calculate(cf, price(), name="테스트은행", industry="은행 및 저축기관")
     assert any("금융업 추정" in c for c in v2.cautions)
+    v3 = ValuationEngine().calculate(cf, price(), name="효성", industry="기타 금융업")
+    assert any("지주회사 또는 금융업 가능성" in c for c in v3.cautions)
 
 
 def test_negative_fair_value_no_discount_prices():

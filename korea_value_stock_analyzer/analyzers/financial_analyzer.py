@@ -166,6 +166,7 @@ class CompanyFinancials:
     shares: dict[str, Any] = field(default_factory=dict)                   # DART 주식총수
     validations: list[dict[str, Any]] = field(default_factory=list)
     bs_dump: list[tuple] = field(default_factory=list)
+    eps_rows: list[tuple] = field(default_factory=list)
     reports: list[dict[str, Any]] = field(default_factory=list)
 
     def add_check(self, name: str, ok: bool | None, detail: str) -> None:
@@ -358,6 +359,9 @@ class FinancialAnalyzer:
         cf.balance = {k: self._value(latest, ACCOUNTS[k], "thstrm_amount") for k in BS_KEYS}
         cf.balance_period = latest.period
         cf.investment_assets, cf.investment_breakdown = self.investment_assets(latest)
+        cf.eps_rows = [(a.report_nm, r.get("sj_div"), r.get("account_id"), r.get("account_nm"), r.get("thstrm_amount"))
+                       for a in (annuals[:1] + [latest]) for r in a.rows
+                       if "주당" in (r.get("account_nm") or "") or "PerShare" in (r.get("account_id") or "")]
         cf.bs_dump = [(r.get("ord"), r.get("account_id"), r.get("account_nm"), r.get("thstrm_amount"))
                       for r in latest.rows if r.get("sj_div") == "BS"]
 
