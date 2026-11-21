@@ -50,7 +50,7 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
         if pr.frame is None or pr.snapshot.is_stale:
             raise RuntimeError(f"주가 데이터 미갱신: {pr.checks.get('message')}")
         df = pr.frame
-        df = df[df["market"].isin(config.settings()["universe"]["markets"])]
+        df = df[df["market"].isin(config.settings()["universe"]["markets"])].copy()
         df["in_type_universe"] = df["exclusion_reasons"].apply(lambda x: len(x) == 0)
         df["in_size_universe"] = apply_size_filter(df)
         scope = config.settings()["dart"]["collect_scope"]
