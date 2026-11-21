@@ -1,0 +1,91 @@
+# Korea Value Stock Analyzer - 기본 설정
+# 모든 임계값·제외조건·출처 신뢰도는 이 파일에서 변경 가능함
+
+timezone: Asia/Seoul
+
+paths:
+  database: data/database/kvsa.sqlite3
+  raw_dir: data/raw
+  processed_dir: data/processed
+  log_dir: logs
+
+# ---------------------------------------------------------------
+# 2-1. 분석 대상(유니버스)
+# ---------------------------------------------------------------
+universe:
+  markets: [KOSPI, KOSDAQ]          # KONEX 제외
+  common_stock_only: true
+  min_listed_shares: 10000000       # 1,000만 주
+  max_listed_shares: 80000000       # 8,000만 주
+  min_market_cap_krw: 50000000000   # 500억원
+  exclude:
+    etf: true
+    etn: true
+    reit: true
+    spac: true
+    preferred: true
+    investment_company: true
+    delisting_scheduled: true       # 상장폐지 예정(정리매매 등) - KIND 접근 불가 시 '확인 불가'로 표시
+    administrative_issue: false     # 관리종목: 기본은 제외하지 않고 표시만 함
+  # 종목명/업종 기반 분류 규칙 (정규식)
+  patterns:
+    spac_name: "스팩|기업인수목적"
+    reit_name: "리츠|REIT|맵스리얼티"
+    investment_company_name: "선박투자|인프라투융자|투자회사|맥쿼리인프라|발해인프라|바다로|베트남개발"
+    # 업종 기반 판정은 신탁회사·벤처캐피탈 등 영업회사까지 잡히므로 기본 비활성 (예: "신탁업 및 집합투자업")
+    investment_company_industry: ""
+    etf_etn_name: "^(KODEX|TIGER|KBSTAR|RISE|ARIRANG|HANARO|KOSEF|ACE|SOL|PLUS|TIMEFOLIO|KIWOOM)\\b|ETN"
+
+# ---------------------------------------------------------------
+# PART 3. 재무지표 통과 기준
+# ---------------------------------------------------------------
+thresholds:
+  psr_max: 1.0            # PSR < 1.0
+  per_max: 15.0           # PER < 15
+  pbr_max: 1.5            # PBR < 1.5
+  operating_margin_min: 5.0   # % 이상
+  net_margin_min: 5.0         # % 이상
+  debt_ratio_max: 200.0       # % 이하
+  reserve_ratio_min: 2000.0   # % 이상
+  listed_shares_min: 10000000
+  listed_shares_max: 80000000
+  market_cap_min_krw: 50000000000
+  revenue_flat_band_pct: 3.0  # 매출 '횡보' 판정: 두 해 증감률 모두 ±3% 이내
+
+# ---------------------------------------------------------------
+# 검증 허용오차
+# ---------------------------------------------------------------
+validation:
+  balance_sheet_tolerance_pct: 0.5     # 자산총계 = 부채총계 + 자본총계 허용 오차(%)
+  market_cap_tolerance_pct: 0.5        # KRX 시가총액 vs 종가×상장주식수
+  eps_cross_check_tolerance_pct: 15.0  # 보고 EPS vs 지배순이익/유통주식수
+  split_ratio_detection: 1.8           # DART 발행주식수 대비 KRX 상장주식수 비율이 이 값 이상/이하(역수)면 액면분할·병합·무상증자 의심
+  reference_tolerance_pct: 1.0         # 보조 출처(억원 반올림)와의 교차검증 허용 오차
+
+# ---------------------------------------------------------------
+# 데이터 출처 및 신뢰도 (1=최상)
+# ---------------------------------------------------------------
+sources:
+  DART_OPENAPI:     {priority: 1, reliability: HIGH,   name: "금융감독원 DART OpenAPI"}
+  KRX_OFFICIAL:     {priority: 2, reliability: HIGH,   name: "한국거래소 정보데이터시스템(pykrx, KRX 로그인)"}
+  KRX_FDR_MIRROR:   {priority: 2, reliability: MEDIUM, name: "KRX 전종목 시세 스냅샷(FinanceDataReader 캐시 경유)"}
+  COMPANY_IR:       {priority: 3, reliability: MEDIUM, name: "기업 IR 자료"}
+  NAVER_FINANCE:    {priority: 4, reliability: LOW,    name: "네이버 증권(FnGuide 요약, 교차검증 전용)"}
+  PUBLIC_WEB:       {priority: 5, reliability: LOW,    name: "기타 공개 웹 자료"}
+
+# ---------------------------------------------------------------
+# DART 수집 설정
+# ---------------------------------------------------------------
+dart:
+  request_interval_sec: 0.12   # 초당 약 8건 (일 20,000건 한도 고려)
+  timeout_sec: 20
+  max_retries: 3
+  lookback_months: 16          # 최근 정기보고서 탐색 기간
+  max_reports_per_company: 6   # 최근 정기보고서 최대 수집 건수(4개 분기 + 직전 사업연도 + 전년 3분기)
+  collect_scope: universe      # universe: 유니버스(종목유형·주식수·시총) 통과 종목만 / all: 전 종목(일 호출 한도 주의)
+
+# ---------------------------------------------------------------
+# PART 11. 자동 실행 (STEP 11에서 사용)
+# ---------------------------------------------------------------
+schedule:
+  start: "07:30"

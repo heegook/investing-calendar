@@ -1,0 +1,13 @@
+# PART 4. 최종 선정 점수(100점 만점) 가중치 - STEP 6에서 사용
+# 합계가 100이 되도록 유지함 (screening_engine에서 검증)
+weights:
+  criteria_pass_count: 30     # 10개 재무지표 충족 개수
+  per: 10
+  pbr: 10
+  operating_margin: 10
+  net_margin: 8
+  debt_ratio: 8
+  reserve_ratio: 6
+  revenue_growth: 8
+  operating_cash_flow: 5
+  recent_quarter_direction: 5

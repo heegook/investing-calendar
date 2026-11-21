@@ -1,0 +1,18 @@
+pandas>=2.2
+numpy>=1.26
+requests>=2.31
+beautifulsoup4>=4.12
+python-dotenv>=1.0
+PyYAML>=6.0
+holidays>=0.60
+pykrx>=1.0.50
+finance-datareader>=0.9.90
+opendartreader>=0.2
+streamlit>=1.40
+plotly>=5.20
+APScheduler>=3.10,<4
+Jinja2>=3.1
+openpyxl>=3.1
+pytest>=8.0
+# PDF 보고서(STEP 10): weasyprint 또는 playwright 중 하나
+# weasyprint>=62
