@@ -34,7 +34,7 @@ universe:
     investment_company_name: "선박투자|인프라투융자|투자회사|맥쿼리인프라|발해인프라|바다로|베트남개발"
     # 업종 기반 판정은 신탁회사·벤처캐피탈 등 영업회사까지 잡히므로 기본 비활성 (예: "신탁업 및 집합투자업")
     investment_company_industry: ""
-    etf_etn_name: "^(KODEX|TIGER|KBSTAR|RISE|ARIRANG|HANARO|KOSEF|ACE|SOL|PLUS|TIMEFOLIO|KIWOOM)\\b|ETN"
+    etf_etn_name: "^(?:KODEX|TIGER|KBSTAR|RISE|ARIRANG|HANARO|KOSEF|ACE|SOL|PLUS|TIMEFOLIO|KIWOOM)\\b|ETN"
 
 # ---------------------------------------------------------------
 # PART 3. 재무지표 통과 기준

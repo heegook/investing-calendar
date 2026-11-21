@@ -178,7 +178,7 @@ def _key(name: str) -> str:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Korea Value Stock Analyzer 일일 분석")
     ap.add_argument("--run-now", action="store_true", help="즉시 1회 실행")
-    ap.add_argument("--codes", help="쉼표로 구분한 종목코드만 실행(검증용)")
+    ap.add_argument("--codes", nargs="+", help="종목코드(쉼표 또는 공백 구분, 예: \"005930,009150\")")
     ap.add_argument("--limit", type=int, help="대상 종목 수 제한(검증용)")
     ap.add_argument("--price-date", help="주가 기준일 강제 지정 YYYY-MM-DD (재현용)")
     ap.add_argument("--dump", action="store_true", help="logs/verify_<run_id>.txt 상세 검증 리포트 저장")
@@ -186,7 +186,12 @@ def main(argv: list[str] | None = None) -> int:
     if not a.run_now:
         print("STEP 11(07:30 자동 실행)은 아직 구현 전임. --run-now 로 1회 실행 가능함")
         return 2
-    res = run_daily(a.codes.split(",") if a.codes else None, a.limit,
+    codes = None
+    if a.codes:
+        # PowerShell 은 따옴표 없는 005930,009150 을 숫자 배열(5930 9150)로 넘기므로 6자리로 복원함
+        codes = [c.strip().zfill(6) for part in a.codes for c in part.split(",") if c.strip()]
+        print(f"대상 종목코드: {codes}")
+    res = run_daily(codes, a.limit,
                     date.fromisoformat(a.price_date) if a.price_date else None, a.dump)
     return 0 if res["status"] in ("SUCCESS", "PARTIAL") else 1
 
