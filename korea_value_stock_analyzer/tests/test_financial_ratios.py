@@ -146,3 +146,15 @@ def test_dart_report_parsing():
     assert bsns_year_candidates(2026, 9, 12) == [2026]
     assert bsns_year_candidates(2026, 6, 3) == [2027, 2026]
     assert parse_amount("-1,234") == -1234 and parse_amount("") is None and parse_amount("-") is None
+
+
+def test_share_premium_used_when_capital_surplus_row_absent():
+    reps = reports()
+    for r in reps:
+        for row in r.rows:
+            if row["account_nm"] == "자본잉여금":
+                row["account_nm"], row["account_id"] = "주식발행초과금", "ifrs-full_SharePremium"
+    cf = FinancialAnalyzer().analyze("TEST01", reps, SHARES)
+    cs = cf.balance["capital_surplus"]
+    assert cs.value == pytest.approx(50 * E8)
+    assert cs.status == DataStatus.PARTIAL and "주식발행초과금" in cs.notes[0]

@@ -103,7 +103,7 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
                                      "STEP 10 보고서", "STEP 11 07:30 자동 실행"]
         _print_summary(results, summary)
         if dump:
-            path = config.path("log_dir") / f"verify_{run_id}.txt"
+            path = config.path("log_dir") / f"verify_{run_id}.log"
             path.write_text(verification_report(results, pr.checks, run_id), encoding="utf-8")
             summary["verification_report"] = str(path)
             print(f"\n검증 리포트 저장: {path}")
@@ -131,7 +131,8 @@ def verification_report(results, price_checks: dict, run_id: str) -> str:
         L.append("### 사용 보고서")
         L += [f"- {x['rcept_no']} {x['report_nm']} period={x['period']} reprt={x['reprt_code']} "
               f"bsns_year={x['bsns_year']} fs={x['fs_div']}" for x in cf.reports]
-        L.append(f"### 주식총수(DART): {cf.shares}")
+        L.append(f"### 주식총수(DART): { {k: v for k, v in cf.shares.items() if k != '_diag'} }")
+        L += [f"- 진단: {d}" for d in cf.shares.get("_diag", [])]
         L.append("### 검증")
         L += [f"- [{v['result']}] {v['check']}: {v['detail']}" for v in cf.validations]
         L.append("### 연간(3개년)")
@@ -168,6 +169,11 @@ def _print_summary(results, summary) -> None:
             mark = {"통과": "O", "미통과": "X", "확인 불가": "?"}[m.check.value]
             cells.append(f"{CHECK_LABEL[_key(m.name)]}={m.display}{mark}")
         print(f"{r.stock_code} {r.name} [{cf.status}] 통과 {rr.pass_count}/10 확인불가 {rr.na_count} | " + ", ".join(cells))
+        if len(results) <= 5:
+            for v in cf.validations:
+                print(f"    [{v['result']}] {v['check']}: {v['detail']}")
+            for d in cf.shares.get("_diag", []):
+                print(f"    주식총수 진단: {d[:300]}")
     print(json.dumps(summary, ensure_ascii=False, indent=1, default=str))
 
 
@@ -181,7 +187,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--codes", nargs="+", help="종목코드(쉼표 또는 공백 구분, 예: \"005930,009150\")")
     ap.add_argument("--limit", type=int, help="대상 종목 수 제한(검증용)")
     ap.add_argument("--price-date", help="주가 기준일 강제 지정 YYYY-MM-DD (재현용)")
-    ap.add_argument("--dump", action="store_true", help="logs/verify_<run_id>.txt 상세 검증 리포트 저장")
+    ap.add_argument("--dump", action="store_true", help="logs/verify_<run_id>.log 상세 검증 리포트 저장")
     a = ap.parse_args(argv)
     if not a.run_now:
         print("STEP 11(07:30 자동 실행)은 아직 구현 전임. --run-now 로 1회 실행 가능함")

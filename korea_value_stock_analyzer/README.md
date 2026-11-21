@@ -53,7 +53,7 @@ python -m scheduler.daily_scheduler --run-now --codes 005930,000660
 python -m scheduler.daily_scheduler --run-now --limit 20
 python -m scheduler.daily_scheduler --run-now --price-date 2026-11-20
 
-# 실데이터 검증 리포트(사용 계정·접수번호·검증 결과) → logs/verify_<run_id>.txt
+# 실데이터 검증 리포트(사용 계정·접수번호·검증 결과) → logs/verify_<run_id>.log
 python -m scheduler.daily_scheduler --run-now --codes 005930,009150,267260 --dump
 
 # 테스트

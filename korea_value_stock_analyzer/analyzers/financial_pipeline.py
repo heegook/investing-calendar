@@ -68,9 +68,16 @@ class FinancialPipeline:
                     return CompanyFinancials(stock_code, "CFS_NOT_AVAILABLE",
                                              "연결재무제표 확인 불가(별도재무제표만 공시) - 별도 대체하지 않음")
                 return CompanyFinancials(stock_code, "NOT_FOUND", "연결재무제표 미확인")
-            top = max(fetched, key=lambda r: (r.period, r.is_annual))
-            shares = self.dart.stock_totals(corp, top.bsns_year, top.reprt_code) or {}
-            if shares:
+            shares, diags = {}, []
+            for rep in sorted(fetched, key=lambda r: (r.period, r.is_annual), reverse=True)[:3]:
+                shares = self.dart.stock_totals(corp, rep.bsns_year, rep.reprt_code) or {}
+                diags.append(self.dart.last_stock_diag)
+                if shares.get("outstanding_shares"):
+                    if rep.period != max(r.period for r in fetched):
+                        shares["note"] = (shares.get("note", "") + f" 최신 보고서 주식총수 미확인 → {rep.period} 기준 사용").strip()
+                    break
+            shares["_diag"] = diags
+            if shares.get("outstanding_shares") is not None:
                 self.db.upsert("share_counts", [{
                     "stock_code": stock_code, "rcept_no": shares.get("rcept_no") or top.rcept_no,
                     "stlm_dt": shares.get("stlm_dt"), "issued_shares": shares.get("issued_shares"),

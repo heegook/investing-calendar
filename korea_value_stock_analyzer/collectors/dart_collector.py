@@ -132,6 +132,7 @@ class DartCollector:
         self._last_call = 0.0
         self.call_count = 0
         self.fatal: DartError | None = None
+        self.last_stock_diag = ""
 
     @property
     def available(self) -> bool:
@@ -273,18 +274,31 @@ class DartCollector:
                               collected_at=collected_at)
 
     def stock_totals(self, corp_code: str, bsns_year: int, reprt_code: str) -> dict[str, Any] | None:
-        """보통주 기준 발행주식총수·자기주식수·유통주식수 + 결산기준일"""
+        """보통주 기준 발행주식총수·자기주식수·유통주식수 + 결산기준일
+
+        진단 정보는 self.last_stock_diag 에 남김 (응답 상태, 구분값 목록)
+        """
         j = self._request("stockTotqySttus.json", {"corp_code": corp_code, "bsns_year": bsns_year,
                                                     "reprt_code": reprt_code})
+        self._save_raw(f"{corp_code}/stockTotqy_{bsns_year}_{reprt_code}.json", j)
+        ses = [(it.get("se") or "") for it in j.get("list", [])]
+        self.last_stock_diag = f"stockTotqySttus({bsns_year},{reprt_code}) status={j.get('status')} se={ses}"
         if j.get("status") != "000":
             return None
-        self._save_raw(f"{corp_code}/stockTotqy_{bsns_year}_{reprt_code}.json", j)
         for it in j.get("list", []):
-            if (it.get("se") or "").replace(" ", "") == "보통주":
-                return {
+            se = re.sub(r"\s+", "", it.get("se") or "")
+            if "보통" in se:
+                out = {
                     "issued_shares": parse_amount(it.get("istc_totqy")),
                     "treasury_shares": parse_amount(it.get("tesstk_co")),
                     "outstanding_shares": parse_amount(it.get("distb_stock_co")),
                     "stlm_dt": it.get("stlm_dt"), "rcept_no": it.get("rcept_no"),
                 }
+                # 유통주식수가 비어 있고 발행·자기주식수가 확인되면 차감하여 산출(산출 근거 표시)
+                if out["outstanding_shares"] is None and out["issued_shares"] is not None \
+                        and out["treasury_shares"] is not None:
+                    out["outstanding_shares"] = out["issued_shares"] - out["treasury_shares"]
+                    out["note"] = "유통주식수 = 발행주식총수 − 자기주식수 (원천 유통주식수 공란)"
+                self.last_stock_diag += f" → 사용: {it}"
+                return out
         return None

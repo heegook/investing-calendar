@@ -72,6 +72,8 @@ ACCOUNTS: dict[str, AccountSpec] = {a.key: a for a in [
     AccountSpec("issued_capital", "자본금", ("BS",), ("ifrs-full_IssuedCapital", "ifrs_IssuedCapital"), r"^자본금$"),
     # 자본잉여금은 표준계정ID가 회사별로 상이하여 계정명으로만 매칭함
     AccountSpec("capital_surplus", "자본잉여금", ("BS",), (), r"^자본잉여금$"),
+    AccountSpec("share_premium", "주식발행초과금", ("BS",), ("ifrs-full_SharePremium", "ifrs_SharePremium"),
+                r"^주식발행초과금$"),
     AccountSpec("retained_earnings", "이익잉여금", ("BS",), ("ifrs-full_RetainedEarnings", "ifrs_RetainedEarnings"),
                 r"^(이익잉여금|이익잉여금\(결손금\)|결손금|미처리결손금)$"),
 ]}
@@ -308,6 +310,12 @@ class FinancialAnalyzer:
                 te = b["total_equity"]
                 b["equity_parent"] = Value(te.value, DataStatus.worst(te.status, DataStatus.PARTIAL), te.source,
                                            notes=["지배기업 소유주지분·비지배지분 행 미표시 → 자본총계를 지배지분으로 간주"])
+        if b["capital_surplus"].value is None:
+            sp = self._value(latest, ACCOUNTS["share_premium"], "thstrm_amount")
+            if sp.value is not None:
+                b["capital_surplus"] = Value(sp.value, DataStatus.worst(sp.status, DataStatus.PARTIAL), sp.source,
+                                             notes=["자본잉여금 행 미표시 → 구성항목인 주식발행초과금만 반영"
+                                                    "(기타자본잉여금은 기타자본항목에 포함되어 미반영 가능)"])
         if annuals:
             a = annuals[0]
             nci_row, _ = self.find_account(a.rows, ACCOUNTS["net_income_nci"])
