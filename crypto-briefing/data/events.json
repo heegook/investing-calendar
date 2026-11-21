@@ -1,15 +1,109 @@
 {
-  "_설명": "달력에 표시할 주요 일정 (모두 한국시간 KST 날짜). status: 확정=공식 발표·공시, 언론=언론 보도, 지남=이미 발생. 회차를 발행할 때 갱신함",
-  "events": [
-    {"date": "2026-11-10", "time": "22:30", "label": "미국 10월 CPI 발표", "kind": "macro", "status": "지남", "source": "BLS"},
-    {"date": "2026-11-13", "time": "", "label": "엔비디아 CEO 사임 공시 (미국시간 11/12)", "kind": "market", "status": "지남", "source": "SEC 8-K"},
-    {"date": "2026-11-14", "time": "", "label": "주말 급락 · 청산 약 20억달러", "kind": "market", "status": "지남", "source": "Coinglass 인용 보도"},
-    {"date": "2026-11-17", "time": "11:00", "label": "업비트 CBK 입출금 일시 중단", "kind": "upbit", "status": "언론", "source": "이코노미블록"},
-    {"date": "2026-11-18", "time": "07:00", "label": "엔비디아 3분기 실적 컨퍼런스콜", "kind": "market", "status": "확정", "source": "SEC 8-K"},
-    {"date": "2026-11-26", "time": "10:00", "label": "XRPL 테스트넷·데브넷 초기화 (메인넷 무관)", "kind": "market", "status": "언론", "source": "XRPL 운영팀 안내 보도"},
-    {"date": "2026-11-26", "time": "", "label": "미국 추수감사절 휴장 (ETF 흐름 없음)", "kind": "macro", "status": "확정", "source": "NYSE 휴장일"},
-    {"date": "2026-12-10", "time": "04:00", "label": "FOMC 금리 결정 (미국시간 12/9 14:00)", "kind": "macro", "status": "확정", "source": "연준 일정"},
-    {"date": "2026-12-10", "time": "22:30", "label": "미국 11월 CPI 발표", "kind": "macro", "status": "확정", "source": "BLS 일정"},
-    {"date": "2026-12-14", "time": "15:00", "label": "업비트 만트라 거래지원 종료 (단일 보도)", "kind": "upbit", "status": "언론", "source": "이코노미블록"}
-  ]
+ "_설명": "달력에 표시할 주요 일정 (모두 한국시간 KST 날짜). status: 확정=공식 발표·공시, 언론=언론 보도, 지남=이미 발생. 회차를 발행할 때 갱신함",
+ "events": [
+  {
+   "date": "2026-11-10",
+   "time": "22:30",
+   "label": "미국 10월 CPI 발표",
+   "kind": "macro",
+   "status": "지남",
+   "source": "BLS"
+  },
+  {
+   "date": "2026-11-13",
+   "time": "",
+   "label": "엔비디아 CEO 사임 공시 (미국시간 11/12)",
+   "kind": "market",
+   "status": "지남",
+   "source": "SEC 8-K"
+  },
+  {
+   "date": "2026-11-14",
+   "time": "",
+   "label": "주말 급락 · 청산 약 20억달러",
+   "kind": "market",
+   "status": "지남",
+   "source": "Coinglass 인용 보도"
+  },
+  {
+   "date": "2026-11-17",
+   "time": "11:00",
+   "label": "업비트 CBK 입출금 일시 중단",
+   "kind": "upbit",
+   "status": "언론",
+   "source": "이코노미블록"
+  },
+  {
+   "date": "2026-11-18",
+   "time": "07:00",
+   "label": "엔비디아 3분기 실적 (예상 상회, 시간외 +3~5%)",
+   "kind": "market",
+   "status": "지남",
+   "source": "CNBC 등"
+  },
+  {
+   "date": "2026-11-20",
+   "time": "",
+   "label": "코스피 −5.21%·코스닥 −5.71%, 매도 사이드카",
+   "kind": "market",
+   "status": "지남",
+   "source": "국내 마감 시황"
+  },
+  {
+   "date": "2026-11-21",
+   "time": "06:00",
+   "label": "미국 AI주 급락 마감 (나스닥 −5.3%, 엔비디아 −14%)",
+   "kind": "market",
+   "status": "지남",
+   "source": "CNN·Axios (미국시간 11/20)"
+  },
+  {
+   "date": "2026-11-23",
+   "time": "09:00",
+   "label": "업비트 주봉 마감 (BTC 8월 저가 주봉 판정)",
+   "kind": "upbit",
+   "status": "확정",
+   "source": "업비트 주봉 기준"
+  },
+  {
+   "date": "2026-11-26",
+   "time": "",
+   "label": "미국 추수감사절 휴장 (ETF 흐름 없음)",
+   "kind": "macro",
+   "status": "확정",
+   "source": "NYSE 휴장일"
+  },
+  {
+   "date": "2026-11-26",
+   "time": "10:00",
+   "label": "XRPL 테스트넷·데브넷 초기화 (메인넷 무관)",
+   "kind": "market",
+   "status": "언론",
+   "source": "XRPL 운영팀 안내 보도"
+  },
+  {
+   "date": "2026-12-10",
+   "time": "04:00",
+   "label": "FOMC 금리 결정 (미국시간 12/9 14:00)",
+   "kind": "macro",
+   "status": "확정",
+   "source": "연준 일정"
+  },
+  {
+   "date": "2026-12-10",
+   "time": "22:30",
+   "label": "미국 11월 CPI 발표",
+   "kind": "macro",
+   "status": "확정",
+   "source": "BLS 일정"
+  },
+  {
+   "date": "2026-12-14",
+   "time": "15:00",
+   "label": "업비트 만트라 거래지원 종료 (단일 보도)",
+   "kind": "upbit",
+   "status": "언론",
+   "source": "이코노미블록"
+  }
+ ]
 }

@@ -75,7 +75,7 @@ def compute(raw, m):
         "ma5": sma(dc, 5), "ma20": sma(dc, 20), "ma60": sma(dc, 60), "ma120": sma(dc, 120), "ma200d": sma(dc, 200),
         "d_rsi": rsi(dc), "pctb": pb, "bb_lo": bl, "bb_up": bu, "macd_h": mh, "macd_h_prev": mh_prev,
         "lo20": min(c["low_price"] for c in D[-20:]), "hi20": max(c["high_price"] for c in D[-20:]),
-        "vol_ratio": vol[-1] / (sum(vol[-21:-1]) / 20), "vol7_ratio": (sum(vol[-7:]) / 7) / (sum(vol[-37:-7]) / 30),
+        "vol_ratio": vol[-1] / (sum(vol[-21:-1]) / 20), "vol_ratio_prev": vol[-2] / (sum(vol[-22:-2]) / 20), "vol7_ratio": (sum(vol[-7:]) / 7) / (sum(vol[-37:-7]) / 30),
         "down_streak": downs,
         # 장기(1개월+): 주봉 (마지막 주봉은 11/9 주 진행 중 캔들, 11/14 09:00까지)
         "w_ma20": sma(wc, 20), "w_ma50": sma(wc, 50), "w_ma200": sma(wc, 200), "w_n": len(wc), "w_rsi": rsi(wc),

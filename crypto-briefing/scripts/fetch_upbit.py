@@ -25,10 +25,15 @@ def get(url):
 
 
 def main():
-    basis = dt.date.fromisoformat(sys.argv[1]) if len(sys.argv) > 1 else dt.datetime.now(KST).date()
+    arg = sys.argv[1] if len(sys.argv) > 1 else dt.datetime.now(KST).date().isoformat()
+    # 'YYYY-MM-DD' = 09:00 일봉 기준, 'YYYY-MM-DDTHH:00' = 해당 시각 기준(‘현시점’ 회차, 1시간봉 종가 사용)
+    hour = int(arg[11:13]) if len(arg) > 10 else 9
+    basis = dt.date.fromisoformat(arg[:10])
     raw_dir = os.path.join(ROOT, "data", "raw", basis.isoformat())
     os.makedirs(raw_dir, exist_ok=True)
-    to_utc = dt.datetime(basis.year, basis.month, basis.day, 0, 0, tzinfo=dt.timezone.utc)  # = 09:00 KST
+    to_utc = dt.datetime(basis.year, basis.month, basis.day, hour, 0, tzinfo=KST).astimezone(dt.timezone.utc)
+    if hour != 9:
+        json.dump({"hour": hour}, open(os.path.join(raw_dir, "basis.json"), "w"))
     rows = []
     for m in MARKETS:
         url = f"https://api.upbit.com/v1/candles/days?market={m}&count=10&to={to_utc:%Y-%m-%dT%H:%M:%SZ}"
@@ -37,12 +42,19 @@ def main():
         by = {c["candle_date_time_kst"][:10]: c for c in data}
         cur_key = (basis - dt.timedelta(days=1)).isoformat()
         base_key = (basis - dt.timedelta(days=8)).isoformat()
+        if hour != 9:  # 기준 시각 직전 1시간봉 종가로 현재·7일 전 가격을 잡음
+            hb = get(f"https://api.upbit.com/v1/candles/minutes/60?market={m}&count=200&to={to_utc:%Y-%m-%dT%H:%M:%SZ}")
+            json.dump(hb, open(os.path.join(raw_dir, f"h1basis_{m}.json"), "w"), ensure_ascii=False, indent=1)
+            end = dt.datetime(basis.year, basis.month, basis.day, hour)
+            by = {c["candle_date_time_kst"][:16]: c for c in hb}
+            cur_key = (end - dt.timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M")
+            base_key = (end - dt.timedelta(days=7, hours=1)).strftime("%Y-%m-%dT%H:%M")
         if cur_key not in by or base_key not in by:
             print(f"[경고] {m}: 기준 일봉 누락 → 기록하지 않음 (0으로 채우지 않음)")
             continue
         cur, base = by[cur_key]["trade_price"], by[base_key]["trade_price"]
         rows.append({
-            "basis_kst": f"{basis.isoformat()} 09:00",
+            "basis_kst": f"{basis.isoformat()} {hour:02d}:00",
             "market": m,
             "price_now": cur,
             "price_7d_ago": base,

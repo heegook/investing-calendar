@@ -33,23 +33,40 @@ def cls(v): return "up" if v > 0 else "down" if v < 0 else ""
 def arrow(v): return "▲" if v > 0 else "▼" if v < 0 else "■"
 
 
-def load(basis):
-    raw = os.path.join(ROOT, "data", "raw", basis.isoformat())
-    out = {}
+def basis_hour(basis):
+    """회차의 가격 기준 시각(시). data/raw/DATE/basis.json 이 있으면 그 시각(‘현시점’ 회차), 없으면 09시(일봉 마감)"""
+    f = os.path.join(ROOT, "data", "raw", basis.isoformat(), "basis.json")
+    return json.load(open(f))["hour"] if os.path.exists(f) else 9
+
+
+def load_series(basis):
+    """같은 시각 기준 8개 시점(7일 전 ~ 현재, 하루 간격)의 가격과 기간 고저가를 돌려줌
+    · 09시 기준: 업비트 일봉 종가(09:00 마감) 사용
+    · 그 외 시각: 해당 시각 직전 1시간봉 종가 사용 (예: 14:00 기준 = 13:00~14:00 봉 종가)"""
+    raw = os.path.join(ROOT, "data", "raw", basis.isoformat()); hr = basis_hour(basis)
+    end = dt.datetime(basis.year, basis.month, basis.day, hr)
+    pts = [end - dt.timedelta(days=7 - i) for i in range(8)]
+    closes, hilo = {}, {}
     for m in [c[1] for c in COINS] + ["KRW-USDT"]:
-        out[m] = {c["candle_date_time_kst"][:10]: c for c in json.load(open(os.path.join(raw, f"day_{m}.json")))}
-    return out
+        if hr == 9:
+            d = {c["candle_date_time_kst"][:10]: c for c in json.load(open(os.path.join(raw, f"day_{m}.json")))}
+            keys = [(p - dt.timedelta(days=1)).date().isoformat() for p in pts]
+            closes[m] = [d[k]["trade_price"] for k in keys]
+            hilo[m] = (max(d[k]["high_price"] for k in keys[1:]), min(d[k]["low_price"] for k in keys[1:]))
+        else:
+            h = {c["candle_date_time_kst"][:16]: c for c in json.load(open(os.path.join(raw, f"h1basis_{m}.json")))}
+            closes[m] = [h[(p - dt.timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M")]["trade_price"] for p in pts]
+            win = [c for k, c in h.items() if pts[0].strftime("%Y-%m-%dT%H:%M") <= k < end.strftime("%Y-%m-%dT%H:%M")]
+            hilo[m] = (max(c["high_price"] for c in win), min(c["low_price"] for c in win))
+    return pts, closes, hilo, hr
 
 
 def build(basis, editions, latest):
     """editions: 발행된 회차 기준일 목록(오름차순), latest: 가장 최근 회차 기준일"""
-    d = load(basis)
-    keys = [(basis - dt.timedelta(days=8 - i)).isoformat() for i in range(8)]  # 8개 일봉: D-8 .. D-1
-    pts = [(basis - dt.timedelta(days=7 - i)) for i in range(8)]                # 각 일봉이 마감되는 날짜(09:00)
+    pts, closes_all, hilo, hr = load_series(basis)
     stats = {}
     for sym, m, *_ in COINS:
-        closes = [d[m][k]["trade_price"] for k in keys]
-        hi = max(d[m][k]["high_price"] for k in keys[1:]); lo = min(d[m][k]["low_price"] for k in keys[1:])
+        closes = closes_all[m]; hi, lo = hilo[m]
         stats[sym] = dict(closes=closes, base=closes[0], cur=closes[-1], wk=(closes[-1] / closes[0] - 1) * 100,
                           d1=(closes[-1] / closes[-2] - 1) * 100, hi=hi, lo=lo)
 
@@ -59,7 +76,7 @@ def build(basis, editions, latest):
         s = stats[sym]
         cards.append(f'''<article class="card" data-coin="{sym}">
   <div class="card-top"><span class="sym"><i class="f-{k}" style="background:var(--c-{k})"></i>{sym}</span><span class="mk">{name} · {m}</span></div>
-  <div><div class="vs">현재 가격 ({basis.month}/{basis.day} 09:00)</div><div class="price num">{fmt(s["cur"])}원</div></div>
+  <div><div class="vs">현재 가격 ({basis.month}/{basis.day} {hr:02d}:00)</div><div class="price num">{fmt(s["cur"])}원</div></div>
   <span class="chg {cls(s["wk"])} num">{arrow(s["wk"])} {pct(s["wk"])} <small>주간 {"상승" if s["wk"]>0 else "하락"}</small></span>
   <div class="row num"><span>7일 전 가격</span><span>{fmt(s["base"])}원</span></div>
   <div class="row num"><span>기간 고가 / 저가</span><span>{fmt(s["hi"])} / {fmt(s["lo"])}</span></div>
@@ -113,13 +130,13 @@ def build(basis, editions, latest):
 
     # 일별 표
     rows = []
-    for i, k in enumerate(keys):
+    for i in range(8):
         p = pts[i]; cells = []
         for m in [c[1] for c in COINS] + ["KRW-USDT"]:
-            v = d[m][k]["trade_price"]; cc = f' cc c-{m[4:]}' if m != "KRW-USDT" else ""
+            v = closes_all[m][i]; cc = f' cc c-{m[4:]}' if m != "KRW-USDT" else ""
             if i == 0: cells.append(f'<td class="r{cc}">{fmt(v)}</td>')
             else:
-                ch = (v / d[m][keys[i-1]]["trade_price"] - 1) * 100
+                ch = (v / closes_all[m][i-1] - 1) * 100
                 cells.append(f'<td class="r{cc}">{fmt(v)} <span class="{cls(ch)}" style="font-weight:600;font-size:12px">({pct(ch)})</span></td>')
         tag = " · 7일 전" if i == 0 else " · 현재" if i == 7 else ""
         rows.append(f'<tr><td>{p.month}/{p.day}({WD[p.weekday()]}){tag}</td>{"".join(cells)}</tr>')
@@ -150,6 +167,8 @@ def build(basis, editions, latest):
     tech = {"{{TECH_SHORT}}": "", "{{TECH_MID}}": "", "{{TECH_LONG}}": ""}
     if os.path.exists(os.path.join(raw, "day200_KRW-BTC.json")):
         T = {c[0]: compute(raw, c[1]) for c in COINS}
+        for c in COINS:  # 이평 대비 등은 회차 기준 가격으로 계산 (현시점 회차는 진행 중 일봉의 순간가 대신 기준 시각 가격)
+            T[c[0]]["last"] = stats[c[0]]["cur"]
         def gap(r, k): return (r["last"] / r[k] - 1) * 100
         def cell_gap(r, k, base="last"):
             v = (r[base] / r[k] - 1) * 100; word = "상회" if v > 0 else "하회"
@@ -175,15 +194,19 @@ def build(basis, editions, latest):
             ("일봉 ATR(14) ÷ 종가", "하루 평균 진폭", lambda r: cell(f'{r["atr_d_pct"]:.1f}%', "목표가 아님, 변동성 참고")),
         ])
         lastd = basis - dt.timedelta(days=1)
+        live = hr != 9   # 현시점 회차: 마지막 일봉은 진행 중(09:00~기준 시각)
+        dlab = f"{basis.month}/{basis.day} 진행 중 일봉(09:00~{hr:02d}:00) 포함" if live else f"{lastd.month}/{lastd.day} 일봉까지"
+        vk = "vol_ratio_prev" if live else "vol_ratio"
+        vd = (basis - dt.timedelta(days=1)) if live else lastd
         tech["{{TECH_MID}}"] = table([
-            ("일봉 RSI(14)", f"{lastd.month}/{lastd.day} 일봉까지", lambda r: cell_rsi(r["d_rsi"])),
+            ("일봉 RSI(14)", dlab, lambda r: cell_rsi(r["d_rsi"])),
             ("볼린저밴드 %B (20, 2σ)", "0 미만 = 하단 밴드 아래", lambda r: cell(f'{r["pctb"]:+.2f}'.replace("-", "−"), "하단 이탈" if r["pctb"] < 0 else "하단 부근" if r["pctb"] < 0.2 else "밴드 안")),
             ("MACD 히스토그램 (12,26,9)", "전일 대비", lambda r: cell("음(−)" if r["macd_h"] < 0 else "양(+)", "음(−) 확대" if r["macd_h"] < r["macd_h_prev"] else "음(−) 축소" if r["macd_h"] < 0 else "양(+)")),
             ("5일 이평 대비", "단기 추세", lambda r: cell_gap(r, "ma5")),
             ("20일 이평 대비", "약 1개월 추세", lambda r: cell_gap(r, "ma20")),
             ("20일 고가 / 저가", "최근 20개 일봉", lambda r: cell(f'{fmt(r["hi20"])} / {fmt(r["lo20"])}')),
-            (f"{lastd.month}/{lastd.day} 거래대금 ÷ 직전 20일 평균", "업비트 KRW 마켓", lambda r: cell(f'{r["vol_ratio"]:.2f}배', "급증" if r["vol_ratio"] >= 2 else "증가" if r["vol_ratio"] >= 1.2 else "평균 수준")),
-            ("연속 하락 마감 일수", "일봉 종가 기준", lambda r: cell(f'{r["down_streak"]}일')),
+            (f"{vd.month}/{vd.day} 거래대금 ÷ 직전 20일 평균", "업비트 KRW 마켓 · 마감된 일봉", lambda r: cell(f'{r[vk]:.2f}배', "급증" if r[vk] >= 2 else "증가" if r[vk] >= 1.2 else "평균 수준")),
+            ("연속 하락 일수", "일봉 기준" + (" · 진행 중 봉 포함" if live else ""), lambda r: cell(f'{r["down_streak"]}일')),
         ])
         tech["{{TECH_LONG}}"] = table([
             ("200주 이평 대비", "약 4년 평균", lambda r: cell_gap(r, "w_ma200")),
@@ -231,7 +254,7 @@ def archive_block(basis, editions, latest, hist):
     ev = json.load(open(os.path.join(ROOT, "data", "events.json"), encoding="utf-8"))["events"]
     eds = []
     for e in editions:
-        k = f"{e.isoformat()} 09:00"; rets = {}
+        eh = basis_hour(e); k = f"{e.isoformat()} {eh:02d}:00"; rets = {}
         for sym, m, *_ in COINS:
             r = hist.get(k, {}).get(m)
             rets[sym] = float(r["weekly_return_pct"]) if r else None   # 미보고는 None(0으로 채우지 않음)
@@ -239,7 +262,7 @@ def archive_block(basis, editions, latest, hist):
         pub = open(gt, encoding="utf-8").read().strip() if os.path.exists(gt) else ""
         start = e - dt.timedelta(days=7)
         eds.append({"date": e.isoformat(), "file": f"reports/{e.isoformat()}.html", "published": pub,
-                    "period": f"{start.month}/{start.day} 09:00 ~ {e.month}/{e.day} 09:00", "ret": rets})
+                    "period": f"{start.month}/{start.day} {eh:02d}:00 ~ {e.month}/{e.day} {eh:02d}:00", "ret": rets})
     data = {"current": basis.isoformat(), "latest": latest.isoformat(), "editions": eds, "events": ev,
             "reading": {"weekdays": [3, 5], "time": "07:00"}}  # JS getDay 기준: 일=0 … 수=3, 금=5
     rows = []
