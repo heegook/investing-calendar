@@ -309,6 +309,57 @@ class DartCollector:
                 return out
         return None
 
+    def company_info(self, corp_code: str) -> dict[str, Any] | None:
+        """기업개황(company.json): 업종코드(induty_code, 한국표준산업분류) 등"""
+        f = self.raw_dir / corp_code / "company.json"
+        if f.exists() and (time.time() - f.stat().st_mtime) < 86400 * 30:
+            return json.loads(f.read_text(encoding="utf-8"))
+        j = self._request("company.json", {"corp_code": corp_code})
+        if j.get("status") != "000":
+            return None
+        self._save_raw(f"{corp_code}/company.json", j)
+        return j
+
+    def other_investments(self, corp_code: str, bsns_year: int, reprt_code: str = REPRT_ANNUAL) -> list[dict] | None:
+        """타법인 출자 현황(otrCprInvstmntSttus): 출자 법인명·지분율"""
+        j = self._request("otrCprInvstmntSttus.json", {"corp_code": corp_code, "bsns_year": bsns_year,
+                                                        "reprt_code": reprt_code})
+        if j.get("status") == "013":
+            return []
+        if j.get("status") != "000":
+            return None
+        self._save_raw(f"{corp_code}/otrCpr_{bsns_year}_{reprt_code}.json", j)
+        return j.get("list", [])
+
+    def document_text(self, corp_code: str, rcept_no: str) -> str | None:
+        """공시서류 원본(document.xml, zip) → 태그 제거 텍스트(목차 제목은 '§제목' 줄로 보존)"""
+        f = self.raw_dir / corp_code / f"doc_{rcept_no}.zip"
+        if f.exists():
+            content = f.read_bytes()
+        else:
+            content = self._request("document.xml", {"rcept_no": rcept_no}, binary=True)
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_bytes(content)
+        parts = []
+        with zipfile.ZipFile(io.BytesIO(content)) as z:
+            for nm in sorted(z.namelist()):
+                raw = z.read(nm)
+                for enc in ("utf-8", "euc-kr", "cp949"):
+                    try:
+                        parts.append(raw.decode(enc))
+                        break
+                    except UnicodeDecodeError:
+                        continue
+        xml = "\n".join(parts)
+        xml = re.sub(r"<TITLE[^>]*>(.*?)</TITLE>", lambda m: "\n§" + re.sub(r"<[^>]+>", "", m.group(1)).strip() + "\n",
+                     xml, flags=re.S)
+        xml = re.sub(r"</(P|TR|TABLE|TITLE|SECTION-\d)>", "\n", xml)
+        xml = re.sub(r"</T[DHE]>", " | ", xml)
+        text = re.sub(r"<[^>]+>", " ", xml)
+        text = re.sub(r"&nbsp;|&#160;", " ", text).replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+        text = re.sub(r"[ \t\r]+", " ", text)
+        return re.sub(r"\n\s*\n+", "\n", text)
+
     def disclosures(self, corp_code: str, start: date, end: date, pblntf_ty: str) -> list[dict[str, Any]]:
         """기간·공시유형별 공시 목록 전체 (리스크 조사용)"""
         out, page = [], 1

@@ -23,6 +23,7 @@ import pandas as pd
 
 from analyzers.financial_pipeline import FinancialPipeline
 from analyzers.ratio_calculator import CHECK_LABEL, PriceInfo, RatioCalculator
+from analyzers.industry_analyzer import IndustryAnalyzer
 from analyzers.risk_analyzer import RiskAnalyzer
 from analyzers.screening_engine import ScreeningEngine, compare_with_previous, to_db_rows
 from analyzers.valuation_engine import ValuationEngine
@@ -158,8 +159,25 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
                           "with_events": sum(1 for v in risk_reports.values() if v.events),
                           "news": next(iter(risk_reports.values())).scope.get("news") if risk_reports else None}
         _print_risk(srows, risk_reports)
-        stages["not_implemented"] = ["STEP 8 특이사항·산업 분석", "STEP 9 투자 판단", "STEP 10 보고서",
-                                     "STEP 11 07:30 자동 실행"]
+        # ---------------- 6. 특이사항·사업 분석 (리스크 조사 대상과 동일) ----------------
+        log.info("[6] 특이사항(지주·중국·금융) 및 사업 내용 분석 - 대상 %d개", len(risk_targets))
+        ia = IndustryAnalyzer(fp.dart)
+        cf_map = {r.stock_code: cf for r, cf, rr in results}
+        ind_reports = {}
+        for x in risk_targets:
+            cfx = cf_map.get(x.stock_code)
+            annual = next((d for d in (cfx.reports if cfx else []) if d["reprt_code"] == "11011"), None)
+            ir = ia.analyze(x.stock_code, x.name, corp_map.get(x.stock_code), annual)
+            ind_reports[x.stock_code] = ir
+            db.upsert("industry_analysis", [{
+                "stock_code": x.stock_code, "analysis_date": started.date().isoformat(),
+                "classification": ir.classification, "rationale": ir.rationale,
+                "metadata_json": {"special": {k: v.__dict__ for k, v in ir.special.items()}, "business": ir.business,
+                                  "source_report": ir.source_report, "status": ir.status, "message": ir.message}}])
+        stages["special_items"] = {k: sum(1 for v in ind_reports.values() if v.special.get(k) and
+                                          v.special[k].result == "Yes") for k in ("지주회사", "중국 관련주", "금융주")}
+        _print_special(srows, ind_reports)
+        stages["not_implemented"] = ["STEP 9 투자 판단", "STEP 10 보고서", "STEP 11 07:30 자동 실행"]
         _print_summary(results, summary)
         if dump:
             path = config.path("log_dir") / f"verify_{run_id}.log"
@@ -171,6 +189,13 @@ def run_daily(codes: list[str] | None = None, limit: int | None = None, price_da
                          f"{x.score:.2f}점 | " + "; ".join(
                              f"{k}={'-' if c['value'] is None else round(c['value'], 4)}→{c['points']:.2f}/{c['weight']}"
                              for k, c in x.components.items()) + (f" | 경고: {' / '.join(x.warnings)}" if x.warnings else "") + "\n")
+            text += "\n" + "=" * 100 + "\n## 특이사항·사업 내용 (후보군)\n"
+            for code, ir in ind_reports.items():
+                text += f"### {code} {ir.name} [{ir.status}] {ir.message} | 원문: {ir.source_report}\n"
+                for k, v in ir.special.items():
+                    text += f"- {k}: {v.result} | " + " / ".join(v.evidence) + "\n"
+                for k, v in ir.business.items():
+                    text += f"- [{k}] {v[:600].replace(chr(10), ' ')}\n"
             text += "\n" + "=" * 100 + "\n## 경영 리스크 조사 (후보군)\n"
             for code, rp in risk_reports.items():
                 text += f"### {code} {rp.name}: {rp.conclusion} [{rp.status}] 범위: {rp.scope}\n"
@@ -252,6 +277,20 @@ def verification_report(results, price_checks: dict, run_id: str) -> str:
             L.append(f"- {m.name}: {m.display} | {m.check.value if m.check else '-'} | {m.status.value} | "
                      f"{m.reason.value if m.reason else ''} | {' / '.join(n for n in m.notes if n)}")
     return "\n".join(L)
+
+
+def _print_special(srows, reports) -> None:
+    print("\n=== 특이사항 (DART 기업개황 업종코드·사업보고서 원문 근거) ===")
+    for x in [x for x in srows if x.selected or x.stock_code in reports][:15]:
+        ir = reports.get(x.stock_code)
+        if ir is None:
+            continue
+        cells = " / ".join(f"{k}: {v.result}" for k, v in ir.special.items())
+        print(f"  {x.stock_code} {x.name}: {cells} [{ir.status}{(' - ' + ir.message) if ir.message else ''}]")
+        for k, v in ir.special.items():
+            if v.result != "No":
+                for e in v.evidence[:3]:
+                    print(f"      {k} 근거: {e}")
 
 
 def _print_risk(srows, reports) -> None:
